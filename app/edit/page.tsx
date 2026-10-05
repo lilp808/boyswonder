@@ -261,7 +261,7 @@ export default function EditPage() {
 
   // ---------- roles ----------
   const [newRole, setNewRole] = useState("");
-  const [newRoleColor, setNewRoleColor] = useState("#4edea3");
+  const [newRoleColor, setNewRoleColor] = useState("#f5f5f5");
 
   async function addNewRole() {
     if (!newRole.trim()) {
@@ -720,7 +720,7 @@ function MemberRow({
           />
         </label>
         <label className="flex cursor-pointer items-center gap-1.5 text-sub">
-          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="accent-emerald-400" />
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="accent-white" />
           แสดงในหน้าเว็บ
         </label>
         <label className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-high px-3 py-1.5 font-semibold text-sub hover:text-ink">
@@ -852,8 +852,8 @@ function RoleRow({
   onDelete: (r: Role) => void;
 }) {
   const [name, setName] = useState(r.name);
-  const [color, setColor] = useState(r.color || "#4edea3");
-  const dirty = name.trim() !== r.name || color !== (r.color || "#4edea3");
+  const [color, setColor] = useState(r.color || "#f5f5f5");
+  const dirty = name.trim() !== r.name || color !== (r.color || "#f5f5f5");
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-low p-3">
@@ -873,7 +873,7 @@ function RoleRow({
         สี
         <input
           type="color"
-          value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : "#4edea3"}
+          value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : "#f5f5f5"}
           onChange={(e) => setColor(e.target.value)}
           className="h-8 w-10 cursor-pointer rounded bg-lowest"
         />

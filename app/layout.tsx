@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Pencil, Trophy, Vote } from "lucide-react";
 import { DEFAULT_SETTINGS } from "@/lib/members";
@@ -8,6 +8,20 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Boys Wonder — คะแนนความประพฤติ",
   description: "Leaderboard + โหวตความประพฤติแก๊ง Boys Wonder",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Boys Wonder",
+  },
+  icons: {
+    icon: "/bwd.jpg",
+    apple: "/bwd.jpg",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#131313",
 };
 
 export default async function RootLayout({
@@ -35,13 +49,13 @@ export default async function RootLayout({
               href="/"
               className="flex items-center gap-2 font-display text-lg font-bold tracking-tight"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-high">
-                <Vote size={20} />
-              </span>
-              {siteName}
-              <span className="hidden text-xs font-medium text-faint sm:inline">
-                {tagline}
-              </span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/bwd.jpg"
+                alt={siteName}
+                title={`${siteName} • ${tagline}`}
+                className="h-9 w-auto rounded-lg object-cover"
+              />
             </Link>
             <div className="flex gap-2">
               <Link

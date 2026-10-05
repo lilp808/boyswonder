@@ -1,0 +1,19 @@
+{
+  "name": "Boys Wonder — คะแนนความประพฤติ",
+  "short_name": "Boys Wonder",
+  "description": "Leaderboard + โหวตความประพฤติแก๊ง Boys Wonder",
+  "start_url": "/vote",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#131313",
+  "theme_color": "#131313",
+  "icons": [
+    {
+      "src": "/bwd.jpg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
