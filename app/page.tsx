@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Award, Flame, Medal, Sparkles, Swords, Trophy } from "lucide-react";
+import { Award, Flame, Medal, Sparkles, Swords, Trophy, X } from "lucide-react";
 import {
   AVATAR,
   DEFAULT_SETTINGS,
@@ -21,6 +21,19 @@ type Member = {
   score: number;
 };
 type FeedEntry = { t: string; name: string; delta: number; reason?: string };
+type HistoryEntry = { t: string; delta: number; reason: string };
+
+function relativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "เมื่อสักครู่";
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return "เมื่อสักครู่";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} นาทีที่แล้ว`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} ชม.ที่แล้ว`;
+  return `${Math.floor(h / 24)} วันที่แล้ว`;
+}
 
 function RoleChips({ roles }: { roles: Member["roles"] }) {
   if (!roles || roles.length === 0) return null;
@@ -86,6 +99,35 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [demo, setDemo] = useState(false);
   const [error, setError] = useState("");
+
+  // modal ประวัติรายคน
+  const [selected, setSelected] = useState<Member | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [plusTotal, setPlusTotal] = useState(0);
+  const [minusTotal, setMinusTotal] = useState(0);
+
+  async function openMember(m: Member) {
+    setSelected(m);
+    setHistory([]);
+    setPlusTotal(0);
+    setMinusTotal(0);
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/history?name=${encodeURIComponent(m.name)}&limit=30`, {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.details ?? data.error ?? "โหลดประวัติไม่ได้");
+      setHistory(data.history ?? []);
+      setPlusTotal(data.plusTotal ?? 0);
+      setMinusTotal(data.minusTotal ?? 0);
+    } catch {
+      // เปิด modal เปล่าๆ ไปก่อน (โชว์คะแนนรวมที่มีอยู่แล้ว)
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   const fetchAll = useCallback(async () => {
     try {
@@ -320,6 +362,7 @@ export default function LeaderboardPage() {
             return (
               <li
                 key={s.name}
+                onClick={() => openMember(s)}
                 style={
                   s.bg_url
                     ? {
@@ -329,7 +372,7 @@ export default function LeaderboardPage() {
                       }
                     : undefined
                 }
-                className={`relative flex items-center gap-4 overflow-hidden rounded-xl border p-4 transition-colors ${
+                className={`relative flex cursor-pointer items-center gap-4 overflow-hidden rounded-xl border p-4 transition-colors ${
                   i === 0
                     ? "border-mint/50 bg-mint/5"
                     : "border-white/10 bg-low hover:bg-panel"
@@ -380,7 +423,89 @@ export default function LeaderboardPage() {
             );
           })}
           </ol>
+
+          <p className="mt-3 text-center text-[11px] text-faint">
+            จิ้มที่การ์ดเพื่อดูประวัติบวก–ลบของแต่ละคน
+          </p>
         </>
+      )}
+
+      {/* modal ประวัติรายคน */}
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="max-h-[85vh] w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-low shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 border-b border-white/10 p-4">
+              <Avatar m={selected} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-display font-bold">{selected.name}</div>
+                <div className="text-xs text-sub">{subtitleOf(selected)}</div>
+                {selected.roles?.length > 0 && (
+                  <div className="mt-1">
+                    <RoleChips roles={selected.roles} />
+                  </div>
+                )}
+              </div>
+              <span
+                className={`font-mono text-2xl font-bold ${selected.score < 0 ? "text-softred" : "text-mint"}`}
+              >
+                {selected.score}
+              </span>
+              <button
+                onClick={() => setSelected(null)}
+                className="rounded-lg bg-high p-1.5 text-sub hover:text-ink"
+                aria-label="ปิด"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 px-4 pt-3 text-xs font-bold uppercase">
+              <span className="rounded bg-mint/10 px-2 py-0.5 text-mint">+{plusTotal} ทำดี</span>
+              <span className="rounded bg-softred/10 px-2 py-0.5 text-softred">-{minusTotal} เกรียน</span>
+              <span className="ml-auto font-normal normal-case text-faint">ประวัติล่าสุด 30 ครั้ง</span>
+            </div>
+
+            <div className="max-h-80 overflow-y-auto p-4 pt-3">
+              {historyLoading ? (
+                <p className="py-6 text-center text-sm text-faint">กำลังโหลดประวัติ…</p>
+              ) : history.length === 0 ? (
+                <p className="py-6 text-center text-sm text-faint">ยังไม่มีประวัติการโหวต</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {history.map((h, idx) => {
+                    const pos = h.delta > 0;
+                    return (
+                      <div
+                        key={`${h.t}-${idx}`}
+                        className="flex items-center justify-between gap-2 rounded-lg bg-lowest p-2.5"
+                      >
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span
+                            className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold ${pos ? "bg-mint/10 text-mint" : "bg-softred/10 text-softred"}`}
+                          >
+                            {pos ? "+1" : "-1"}
+                          </span>
+                          <span className="truncate text-sm text-sub">
+                            {h.reason ? (pos ? `ทำดี: ${h.reason}` : `เกรียน: ${h.reason}`) : "—"}
+                          </span>
+                        </div>
+                        <span className="shrink-0 text-[11px] text-faint">
+                          {relativeTime(h.t)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       <footer className="mt-8 border-t border-white/10 py-4 text-center text-xs text-faint">

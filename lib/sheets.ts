@@ -119,6 +119,53 @@ export async function voteAndGetScores(
   return getScores();
 }
 
+export async function getMemberHistory(
+  name: string,
+  limit = 30
+): Promise<{
+  history: { t: string; delta: number; reason: string }[];
+  plusTotal: number;
+  minusTotal: number;
+}> {
+  const clean = name.trim();
+  if (!clean) throw new Error("ต้องระบุชื่อ");
+  const c = db();
+  const safeLimit = Math.min(Math.max(limit, 1), 50);
+  // ลองอ่านพร้อม reason ก่อน (DB ใหม่) ถ้าไม่ได้ค่อย fallback (DB เก่า)
+  let rows: { created_at: string; delta: number; reason?: string }[] = [];
+  const full = await c
+    .from("votes_log")
+    .select("created_at,delta,reason")
+    .eq("name", clean)
+    .order("created_at", { ascending: false })
+    .limit(safeLimit);
+  if (!full.error) {
+    rows = (full.data ?? []) as typeof rows;
+  } else {
+    const { data, error } = await c
+      .from("votes_log")
+      .select("created_at,delta")
+      .eq("name", clean)
+      .order("created_at", { ascending: false })
+      .limit(safeLimit);
+    if (error) throw new Error("อ่านประวัติไม่ได้: " + error.message);
+    rows = (data ?? []).map((r) => ({ ...(r as object), reason: "" }) as typeof rows[0]);
+  }
+  const [{ count: plusTotal }, { count: minusTotal }] = await Promise.all([
+    c.from("votes_log").select("id", { count: "exact", head: true }).eq("name", clean).eq("delta", 1),
+    c.from("votes_log").select("id", { count: "exact", head: true }).eq("name", clean).eq("delta", -1),
+  ]);
+  return {
+    history: rows.map((r) => ({
+      t: r.created_at,
+      delta: r.delta,
+      reason: r.reason ?? "",
+    })),
+    plusTotal: plusTotal ?? 0,
+    minusTotal: minusTotal ?? 0,
+  };
+}
+
 export async function getFeed(limit = 15): Promise<{
   feed: FeedEntry[];
   total: number;
