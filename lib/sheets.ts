@@ -5,28 +5,41 @@ const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
 function getEnv() {
   const sheetId = process.env.GOOGLE_SHEET_ID;
+  // วิธีที่ 1: Service Account
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  return { sheetId, clientEmail, privateKey };
+  // วิธีที่ 2: OAuth Client (client_id + client_secret + refresh_token)
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  return { sheetId, clientEmail, privateKey, clientId, clientSecret, refreshToken };
 }
 
 export function isSheetsConfigured() {
-  const { sheetId, clientEmail, privateKey } = getEnv();
-  return Boolean(sheetId && clientEmail && privateKey);
+  const { sheetId, clientEmail, privateKey, clientId, clientSecret, refreshToken } =
+    getEnv();
+  const serviceAccount = Boolean(clientEmail && privateKey);
+  const oauth = Boolean(clientId && clientSecret && refreshToken);
+  return Boolean(sheetId && (serviceAccount || oauth));
 }
 
 function getClient() {
-  const { clientEmail, privateKey } = getEnv();
-  if (!clientEmail || !privateKey) {
-    throw new Error(
-      "ยังไม่ได้ตั้งค่า GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_PRIVATE_KEY"
-    );
+  const { clientEmail, privateKey, clientId, clientSecret, refreshToken } = getEnv();
+  if (clientEmail && privateKey) {
+    return new google.auth.JWT({
+      email: clientEmail,
+      key: privateKey,
+      scopes: SCOPES,
+    });
   }
-  return new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey,
-    scopes: SCOPES,
-  });
+  if (clientId && clientSecret && refreshToken) {
+    const oauth2 = new google.auth.OAuth2(clientId, clientSecret);
+    oauth2.setCredentials({ refresh_token: refreshToken });
+    return oauth2;
+  }
+  throw new Error(
+    "ยังไม่ได้ตั้งค่าการยืนยันตัวตน — ใช้ Service Account หรือ OAuth Client (CLIENT_ID/CLIENT_SECRET/REFRESH_TOKEN)"
+  );
 }
 
 export async function getScores(): Promise<ScoreEntry[]> {
