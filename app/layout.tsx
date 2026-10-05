@@ -6,7 +6,7 @@ import { getSettings, isSheetsConfigured } from "@/lib/sheets";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Boys Wonder — คะแนนความประพฤติ",
+  title: "BoysWonder - ใครบวกใครลบ",
   description: "Leaderboard + โหวตความประพฤติแก๊ง Boys Wonder",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
