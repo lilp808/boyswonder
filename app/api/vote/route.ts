@@ -33,8 +33,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ scores });
   } catch (e) {
     console.error(e);
+    const details = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: "บันทึกโหวตลง Google Sheet ไม่ได้" },
+      { error: "บันทึกโหวตลง Google Sheet ไม่ได้", details },
       { status: 500 }
     );
   }

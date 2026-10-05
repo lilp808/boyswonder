@@ -48,9 +48,17 @@ function ss_() {
   return SpreadsheetApp.getActiveSpreadsheet();
 }
 
+function tabNames_() {
+  return ss_().getSheets().map(function (s) { return s.getName(); });
+}
+
 function getScores_() {
   var sheet = ss_().getSheetByName('Scores');
-  if (!sheet) throw new Error('ไม่พบ tab Scores');
+  if (!sheet) {
+    throw new Error(
+      'ไม่พบ tab Scores ในไฟล์ "' + ss_().getName() + '" (มี tabs: ' + tabNames_().join(', ') + ')'
+    );
+  }
   var rows = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 0), 2).getValues();
   var map = {};
   rows.forEach(function (r) {
@@ -74,11 +82,19 @@ function vote_(params) {
     var s = ss_();
 
     var log = s.getSheetByName('Log');
-    if (!log) throw new Error('ไม่พบ tab Log');
+    if (!log) {
+      throw new Error(
+        'ไม่พบ tab Log ในไฟล์ "' + s.getName() + '" (มี tabs: ' + tabNames_().join(', ') + ')'
+      );
+    }
     log.appendRow([new Date(), name, delta]);
 
     var sheet = s.getSheetByName('Scores');
-    if (!sheet) throw new Error('ไม่พบ tab Scores');
+    if (!sheet) {
+      throw new Error(
+        'ไม่พบ tab Scores ในไฟล์ "' + s.getName() + '" (มี tabs: ' + tabNames_().join(', ') + ')'
+      );
+    }
     var lastRow = sheet.getLastRow();
     var foundRow = -1;
     var current = 0;

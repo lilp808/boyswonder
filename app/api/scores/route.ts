@@ -20,8 +20,9 @@ export async function GET() {
     return NextResponse.json({ scores });
   } catch (e) {
     console.error(e);
+    const details = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: "อ่านคะแนนจาก Google Sheet ไม่ได้" },
+      { error: "อ่านคะแนนจาก Google Sheet ไม่ได้", details },
       { status: 500 }
     );
   }
