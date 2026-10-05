@@ -81,8 +81,8 @@ export async function voteAndGetScores(
   const clean = name.trim();
   if (!clean) throw new Error("ชื่อไม่ถูกต้อง");
   const why = reason.trim();
-  // กด -1 ต้องมีเหตุผล
-  if (delta === -1 && !why) throw new Error("กด -1 ต้องใส่เหตุผลด้วยว่าเกรียนเรื่องอะไร");
+  // กดโหวต (+1 / -1) ต้องมีเหตุผลทุกครั้ง
+  if (!why) throw new Error("กดโหวตต้องใส่เหตุผลด้วย");
   // ตรวจสมาชิกใน DB (ถ้ามีตาราง) — ต้อง active ถึงโหวตได้
   // ถ้าตาราง members ยังไม่มี (DB เก่าที่ยังไม่รัน migration) ให้ fallback เช็คลิสต์เดิม
   try {

@@ -110,8 +110,17 @@ export default function VotePage() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortMode>("all");
   const [latency, setLatency] = useState<number | null>(null);
-  const [trollTarget, setTrollTarget] = useState<string | null>(null);
+  const [trollTarget, setTrollTarget] = useState<{ name: string; delta: 1 | -1 } | null>(null);
   const [trollReason, setTrollReason] = useState("");
+
+  function openVoteForm(s: Member, delta: 1 | -1) {
+    if (trollTarget?.name === s.name && trollTarget?.delta === delta) {
+      setTrollTarget(null);
+    } else {
+      setTrollTarget({ name: s.name, delta });
+      setTrollReason("");
+    }
+  }
 
   const refresh = useCallback(async () => {
     const t0 = performance.now();
@@ -153,8 +162,12 @@ export default function VotePage() {
   async function vote(name: string, delta: 1 | -1, reason = "") {
     if (busy) return;
     const why = reason.trim();
-    if (delta === -1 && !why) {
-      setError("กด -1 ต้องใส่เหตุผลด้วยว่าเกรียนเรื่องอะไร");
+    if (!why) {
+      setError(
+        delta === -1
+          ? "กด -1 ต้องใส่เหตุผลด้วยว่าเกรียนเรื่องอะไร"
+          : "กด +1 ต้องใส่เหตุผลด้วยว่าทำดีเรื่องอะไร"
+      );
       return;
     }
     setBusy(true);
@@ -371,16 +384,9 @@ export default function VotePage() {
                   <div className="relative grid grid-cols-2 gap-2 pt-1">
                     <button
                       disabled={busy}
-                      onClick={() => {
-                        if (trollTarget === s.name) {
-                          setTrollTarget(null);
-                        } else {
-                          setTrollTarget(s.name);
-                          setTrollReason("");
-                        }
-                      }}
+                      onClick={() => openVoteForm(s, -1)}
                       className={`flex items-center justify-center gap-1 rounded-lg px-2 py-2.5 font-semibold shadow-sm transition-all active:scale-95 disabled:opacity-40 ${
-                        trollTarget === s.name
+                        trollTarget?.name === s.name && trollTarget?.delta === -1
                           ? "bg-softred text-black"
                           : "bg-softred/10 text-softred hover:bg-softred hover:text-black"
                       }`}
@@ -390,31 +396,41 @@ export default function VotePage() {
                     </button>
                     <button
                       disabled={busy}
-                      onClick={() => vote(s.name, 1)}
-                      className="flex items-center justify-center gap-1 rounded-lg bg-highest px-2 py-2.5 font-semibold text-ink shadow-sm transition-all hover:bg-mint hover:text-black active:scale-95 disabled:opacity-40"
+                      onClick={() => openVoteForm(s, 1)}
+                      className={`flex items-center justify-center gap-1 rounded-lg px-2 py-2.5 font-semibold shadow-sm transition-all active:scale-95 disabled:opacity-40 ${
+                        trollTarget?.name === s.name && trollTarget?.delta === 1
+                          ? "bg-mint text-black"
+                          : "bg-highest text-ink hover:bg-mint hover:text-black"
+                      }`}
                     >
                       <ThumbsUp size={20} />
                       +1 ทำดี
                     </button>
                   </div>
-                  {trollTarget === s.name && (
+                  {trollTarget?.name === s.name && (
                     <div className="relative mt-2 flex gap-2">
                       <input
                         value={trollReason}
                         onChange={(e) => setTrollReason(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") vote(s.name, -1, trollReason);
+                          if (e.key === "Enter") vote(s.name, trollTarget.delta, trollReason);
                         }}
-                        placeholder="เกรียนเรื่องอะไร… (ต้องใส่)"
+                        placeholder={
+                          trollTarget.delta === -1
+                            ? "เกรียนเรื่องอะไร… (ต้องใส่)"
+                            : "ทำดีเรื่องอะไร… (ต้องใส่)"
+                        }
                         autoFocus
                         className="min-w-0 flex-1 rounded-lg bg-lowest px-3 py-2 text-sm text-ink placeholder-faint focus:outline-none"
                       />
                       <button
                         disabled={busy || !trollReason.trim()}
-                        onClick={() => vote(s.name, -1, trollReason)}
-                        className="shrink-0 rounded-lg bg-softred px-4 py-2 text-sm font-bold text-black hover:brightness-110 disabled:opacity-40"
+                        onClick={() => vote(s.name, trollTarget.delta, trollReason)}
+                        className={`shrink-0 rounded-lg px-4 py-2 text-sm font-bold text-black hover:brightness-110 disabled:opacity-40 ${
+                          trollTarget.delta === -1 ? "bg-softred" : "bg-mint"
+                        }`}
                       >
-                        ยืนยัน -1
+                        ยืนยัน {trollTarget.delta === -1 ? "-1" : "+1"}
                       </button>
                     </div>
                   )}
@@ -465,7 +481,7 @@ export default function VotePage() {
                           <span className="block truncate text-sm font-medium">
                             {f.name}
                           </span>
-                          {!pos && f.reason && (
+                          {f.reason && (
                             <span className="block truncate text-[11px] text-sub">
                               เพราะ {f.reason}
                             </span>

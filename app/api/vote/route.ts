@@ -18,9 +18,9 @@ export async function POST(req: Request) {
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "ชื่อไม่ถูกต้อง" }, { status: 400 });
   }
-  if (delta === -1 && !(typeof reason === "string" && reason.trim())) {
+  if (!(typeof reason === "string" && reason.trim())) {
     return NextResponse.json(
-      { error: "กด -1 ต้องใส่เหตุผลด้วยว่าเกรียนเรื่องอะไร" },
+      { error: "กดโหวตต้องใส่เหตุผลด้วย" },
       { status: 400 }
     );
   }

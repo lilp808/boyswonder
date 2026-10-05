@@ -207,7 +207,7 @@ create table if not exists deleted_log (
 alter table deleted_log enable row level security;
 -- (ไม่สร้าง policy = anon อ่านไม่ได้ ให้ server ใช้ service_role เท่านั้น)
 
--- 14) เหตุผลตอนกด -1: เก็บใน votes_log (หน้าโหวตบังคับกรอก)
+-- 14) เหตุผลตอนกดโหวต (+1 / -1 บังคับกรอกทุกครั้ง): เก็บใน votes_log
 alter table votes_log add column if not exists reason text not null default '';
 
 create or replace function vote_member(p_name text, p_delta smallint, p_reason text default '')
