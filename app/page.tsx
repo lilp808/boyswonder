@@ -20,7 +20,7 @@ type Member = {
   is_active: boolean;
   score: number;
 };
-type FeedEntry = { t: string; name: string; delta: number };
+type FeedEntry = { t: string; name: string; delta: number; reason?: string };
 
 function RoleChips({ roles }: { roles: Member["roles"] }) {
   if (!roles || roles.length === 0) return null;
@@ -155,12 +155,14 @@ export default function LeaderboardPage() {
       }
     }
     const sum = plus + minus;
+    const latestTroll = feed.find((f) => f.delta < 0 && f.reason);
     return {
       lowest,
       highest,
       menace,
       menaceHits,
       lowestRecentNeg: negCount.get(lowest.name) ?? 0,
+      latestTroll: latestTroll ?? null,
       plus,
       minus,
       plusPct: sum === 0 ? 50 : Math.round((plus / sum) * 100),
@@ -248,6 +250,12 @@ export default function LeaderboardPage() {
                     "คะแนนรวมต่ำสุดในแก๊ง — ระวังโดนลงทัณฑ์"
                   )}
                 </p>
+                {stats.latestTroll?.reason && (
+                  <p className="mt-1 truncate text-xs text-sub">
+                    ล่าสุด: <span className="font-semibold text-ink">{stats.latestTroll.name}</span>
+                    {" "}โดนเพราะ “{stats.latestTroll.reason}”
+                  </p>
+                )}
               </div>
 
               <div className="relative overflow-hidden rounded-xl border border-mint/30 bg-mint/5 p-4">

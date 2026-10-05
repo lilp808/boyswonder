@@ -26,7 +26,7 @@ type Member = {
   is_active: boolean;
   score: number;
 };
-type FeedEntry = { t: string; name: string; delta: number };
+type FeedEntry = { t: string; name: string; delta: number; reason?: string };
 
 type SortMode = "all" | "neg" | "pos";
 
@@ -110,6 +110,8 @@ export default function VotePage() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortMode>("all");
   const [latency, setLatency] = useState<number | null>(null);
+  const [trollTarget, setTrollTarget] = useState<string | null>(null);
+  const [trollReason, setTrollReason] = useState("");
 
   const refresh = useCallback(async () => {
     const t0 = performance.now();
@@ -148,23 +150,30 @@ export default function VotePage() {
     return () => clearInterval(t);
   }, [refresh]);
 
-  async function vote(name: string, delta: 1 | -1) {
+  async function vote(name: string, delta: 1 | -1, reason = "") {
     if (busy) return;
+    const why = reason.trim();
+    if (delta === -1 && !why) {
+      setError("กด -1 ต้องใส่เหตุผลด้วยว่าเกรียนเรื่องอะไร");
+      return;
+    }
     setBusy(true);
     setMembers((prev) =>
       prev.map((s) => (s.name === name ? { ...s, score: s.score + delta } : s))
     );
     setFeed((prev) =>
-      [{ t: new Date().toISOString(), name, delta }, ...prev].slice(0, 15)
+      [{ t: new Date().toISOString(), name, delta, reason: why }, ...prev].slice(0, 15)
     );
     try {
       const res = await fetch("/api/vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, delta }),
+        body: JSON.stringify({ name, delta, reason: why }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.details ?? data.error ?? "โหวตไม่สำเร็จ");
+      setTrollTarget(null);
+      setTrollReason("");
       refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "โหวตไม่สำเร็จ");
@@ -362,8 +371,19 @@ export default function VotePage() {
                   <div className="relative grid grid-cols-2 gap-2 pt-1">
                     <button
                       disabled={busy}
-                      onClick={() => vote(s.name, -1)}
-                      className="flex items-center justify-center gap-1 rounded-lg bg-softred/10 px-2 py-2.5 font-semibold text-softred shadow-sm transition-all hover:bg-softred hover:text-black active:scale-95 disabled:opacity-40"
+                      onClick={() => {
+                        if (trollTarget === s.name) {
+                          setTrollTarget(null);
+                        } else {
+                          setTrollTarget(s.name);
+                          setTrollReason("");
+                        }
+                      }}
+                      className={`flex items-center justify-center gap-1 rounded-lg px-2 py-2.5 font-semibold shadow-sm transition-all active:scale-95 disabled:opacity-40 ${
+                        trollTarget === s.name
+                          ? "bg-softred text-black"
+                          : "bg-softred/10 text-softred hover:bg-softred hover:text-black"
+                      }`}
                     >
                       <ThumbsDown size={20} />
                       -1 เกรียน
@@ -377,6 +397,27 @@ export default function VotePage() {
                       +1 ทำดี
                     </button>
                   </div>
+                  {trollTarget === s.name && (
+                    <div className="relative mt-2 flex gap-2">
+                      <input
+                        value={trollReason}
+                        onChange={(e) => setTrollReason(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") vote(s.name, -1, trollReason);
+                        }}
+                        placeholder="เกรียนเรื่องอะไร… (ต้องใส่)"
+                        autoFocus
+                        className="min-w-0 flex-1 rounded-lg bg-lowest px-3 py-2 text-sm text-ink placeholder-faint focus:outline-none"
+                      />
+                      <button
+                        disabled={busy || !trollReason.trim()}
+                        onClick={() => vote(s.name, -1, trollReason)}
+                        className="shrink-0 rounded-lg bg-softred px-4 py-2 text-sm font-bold text-black hover:brightness-110 disabled:opacity-40"
+                      >
+                        ยืนยัน -1
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -420,9 +461,16 @@ export default function VotePage() {
                             className="shrink-0 text-softred"
                           />
                         )}
-                        <span className="truncate text-sm font-medium">
-                          {f.name}
-                        </span>
+                        <div className="min-w-0">
+                          <span className="block truncate text-sm font-medium">
+                            {f.name}
+                          </span>
+                          {!pos && f.reason && (
+                            <span className="block truncate text-[11px] text-sub">
+                              เพราะ {f.reason}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <span

@@ -13,6 +13,7 @@ export type FeedEntry = {
   t: string;
   name: string;
   delta: number;
+  reason: string;
 };
 
 let client: SupabaseClient | null = null;
@@ -74,10 +75,14 @@ export async function getScores(): Promise<ScoreEntry[]> {
 
 export async function voteAndGetScores(
   name: string,
-  delta: 1 | -1
+  delta: 1 | -1,
+  reason = ""
 ): Promise<ScoreEntry[]> {
   const clean = name.trim();
   if (!clean) throw new Error("ชื่อไม่ถูกต้อง");
+  const why = reason.trim();
+  // กด -1 ต้องมีเหตุผล
+  if (delta === -1 && !why) throw new Error("กด -1 ต้องใส่เหตุผลด้วยว่าเกรียนเรื่องอะไร");
   // ตรวจสมาชิกใน DB (ถ้ามีตาราง) — ต้อง active ถึงโหวตได้
   // ถ้าตาราง members ยังไม่มี (DB เก่าที่ยังไม่รัน migration) ให้ fallback เช็คลิสต์เดิม
   try {
@@ -97,8 +102,20 @@ export async function voteAndGetScores(
   const { error } = await db().rpc("vote_member", {
     p_name: clean,
     p_delta: delta,
+    p_reason: why,
   });
-  if (error) throw new Error("บันทึกโหวตลง Supabase ไม่ได้: " + error.message);
+  if (error) {
+    // fallback DB เก่าที่ยังไม่รัน migration (function ยังไม่รับ p_reason)
+    if (!why) {
+      const retry = await db().rpc("vote_member", {
+        p_name: clean,
+        p_delta: delta,
+      });
+      if (retry.error) throw new Error("บันทึกโหวตลง Supabase ไม่ได้: " + retry.error.message);
+    } else {
+      throw new Error("บันทึกโหวตไม่ได้ (DB ยังไม่รองรับเหตุผล — รัน schema.sql ใหม่ก่อน): " + error.message);
+    }
+  }
   return getScores();
 }
 
@@ -107,20 +124,31 @@ export async function getFeed(limit = 15): Promise<{
   total: number;
 }> {
   const c = db();
-  const [{ data, error }, { count }] = await Promise.all([
-    c
+  // ลองอ่านพร้อม reason ก่อน (DB ใหม่) ถ้าไม่ได้ค่อย fallback แบบไม่มี reason (DB เก่า)
+  const full = await c
+    .from("votes_log")
+    .select("created_at,name,delta,reason")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  let rows: { created_at: string; name: string; delta: number; reason?: string }[] = [];
+  if (!full.error) {
+    rows = (full.data ?? []) as typeof rows;
+  } else {
+    const { data, error } = await c
       .from("votes_log")
       .select("created_at,name,delta")
       .order("created_at", { ascending: false })
-      .limit(limit),
-    c.from("votes_log").select("id", { count: "exact", head: true }),
-  ]);
-  if (error) throw new Error("อ่านฟีดจาก Supabase ไม่ได้: " + error.message);
+      .limit(limit);
+    if (error) throw new Error("อ่านฟีดจาก Supabase ไม่ได้: " + error.message);
+    rows = (data ?? []).map((r) => ({ ...(r as object), reason: "" }) as typeof rows[0]);
+  }
+  const { count } = await c.from("votes_log").select("id", { count: "exact", head: true });
   return {
-    feed: (data ?? []).map((r) => ({
+    feed: rows.map((r) => ({
       t: r.created_at as string,
       name: r.name as string,
       delta: r.delta as number,
+      reason: (r.reason as string) ?? "",
     })),
     total: count ?? 0,
   };

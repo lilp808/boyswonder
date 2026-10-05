@@ -206,3 +206,27 @@ create table if not exists deleted_log (
 );
 alter table deleted_log enable row level security;
 -- (ไม่สร้าง policy = anon อ่านไม่ได้ ให้ server ใช้ service_role เท่านั้น)
+
+-- 14) เหตุผลตอนกด -1: เก็บใน votes_log (หน้าโหวตบังคับกรอก)
+alter table votes_log add column if not exists reason text not null default '';
+
+create or replace function vote_member(p_name text, p_delta smallint, p_reason text default '')
+returns setof scores
+language plpgsql
+as $$
+begin
+  if p_delta not in (1, -1) then
+    raise exception 'delta must be 1 or -1';
+  end if;
+
+  insert into votes_log (name, delta, reason) values (p_name, p_delta, coalesce(p_reason, ''));
+
+  insert into scores (name, score, updated_at)
+  values (p_name, p_delta, now())
+  on conflict (name) do update
+    set score = scores.score + excluded.score,
+        updated_at = now();
+
+  return query select * from scores;
+end;
+$$;
