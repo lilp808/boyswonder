@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import {
-  addMember,
-  deleteMember,
-  getDeletedLog,
-  getMembersWithScores,
+  addRole,
+  deleteRole,
+  getRoles,
   isSheetsConfigured,
   requireAdmin,
-  updateMember,
+  updateRole,
 } from "@/lib/sheets";
 
 export const dynamic = "force-dynamic";
@@ -31,25 +30,20 @@ function auth(req: Request, body?: { password?: string }) {
   }
 }
 
-// ดูสมาชิกทั้งหมด (รวมคนโดนปิดใช้งาน) — ใช้ในหน้า /edit
 export async function GET(req: Request) {
   try {
     auth(req);
-    const [members, deletedLog] = await Promise.all([
-      getMembersWithScores(),
-      getDeletedLog(),
-    ]);
-    return NextResponse.json({ members, deletedLog });
+    const roles = await getRoles();
+    return NextResponse.json({ roles });
   } catch (e) {
     const details = e instanceof Error ? e.message : String(e);
     const status = /รหัสผ่าน|เข้าไม่ได้/.test(details) ? 401 : 500;
-    return NextResponse.json({ error: "อ่านสมาชิกไม่ได้", details }, { status });
+    return NextResponse.json({ error: "อ่าน role ไม่ได้", details }, { status });
   }
 }
 
-// เพิ่มสมาชิกใหม่
 export async function POST(req: Request) {
-  let body: { password?: string; name?: string; subtitle?: string; avatar_url?: string };
+  let body: { password?: string; name?: string; color?: string };
   try {
     body = await req.json();
   } catch {
@@ -57,32 +51,23 @@ export async function POST(req: Request) {
   }
   try {
     auth(req, body);
-    await addMember({
-      name: body.name ?? "",
-      subtitle: body.subtitle ?? "",
-      avatar_url: body.avatar_url ?? "",
-    });
-    const members = await getMembersWithScores();
-    return NextResponse.json({ ok: true, members });
+    await addRole({ name: body.name ?? "", color: body.color ?? "" });
+    const roles = await getRoles();
+    return NextResponse.json({ ok: true, roles });
   } catch (e) {
     const details = e instanceof Error ? e.message : String(e);
     const status = /รหัสผ่าน/.test(details) ? 401 : 400;
-    return NextResponse.json({ error: "เพิ่มสมาชิกไม่ได้", details }, { status });
+    return NextResponse.json({ error: "เพิ่ม role ไม่ได้", details }, { status });
   }
 }
 
-// แก้ไขสมาชิก (เปลี่ยนชื่อ/ฉายา/รูป/ลำดับ/เปิด-ปิด)
 export async function PUT(req: Request) {
   let body: {
     password?: string;
     oldName?: string;
     name?: string;
-    subtitle?: string;
-    avatar_url?: string;
-    bg_url?: string;
+    color?: string;
     sort_order?: number;
-    is_active?: boolean;
-    roles?: string[];
   };
   try {
     body = await req.json();
@@ -94,28 +79,22 @@ export async function PUT(req: Request) {
   }
   try {
     auth(req, body);
-    await updateMember(body.oldName, {
+    await updateRole(body.oldName, {
       name: body.name,
-      subtitle: body.subtitle,
-      avatar_url: body.avatar_url,
-      bg_url: body.bg_url,
+      color: body.color,
       sort_order: body.sort_order,
-      is_active: body.is_active,
-      roles: body.roles,
     });
-    const members = await getMembersWithScores();
-    return NextResponse.json({ ok: true, members });
+    const roles = await getRoles();
+    return NextResponse.json({ ok: true, roles });
   } catch (e) {
     const details = e instanceof Error ? e.message : String(e);
     const status = /รหัสผ่าน/.test(details) ? 401 : 400;
-    return NextResponse.json({ error: "แก้ไขสมาชิกไม่ได้", details }, { status });
+    return NextResponse.json({ error: "แก้ไข role ไม่ได้", details }, { status });
   }
 }
 
-// ลบสมาชิก (?hard=1 = ลบถาวรพร้อมคะแนน, ปกติแค่ปิดใช้งาน)
-// ลบถาวรต้องแนบเหตุผล (reason) มาด้วย
 export async function DELETE(req: Request) {
-  let body: { password?: string; name?: string; reason?: string };
+  let body: { password?: string; name?: string };
   try {
     body = await req.json();
   } catch {
@@ -126,17 +105,12 @@ export async function DELETE(req: Request) {
   }
   try {
     auth(req, body);
-    const u = new URL(req.url);
-    const hard = u.searchParams.get("hard") === "1";
-    await deleteMember(body.name, hard, body.reason ?? "");
-    const [members, deletedLog] = await Promise.all([
-      getMembersWithScores(),
-      getDeletedLog(),
-    ]);
-    return NextResponse.json({ ok: true, members, deletedLog });
+    await deleteRole(body.name);
+    const roles = await getRoles();
+    return NextResponse.json({ ok: true, roles });
   } catch (e) {
     const details = e instanceof Error ? e.message : String(e);
     const status = /รหัสผ่าน/.test(details) ? 401 : 400;
-    return NextResponse.json({ error: "ลบสมาชิกไม่ได้", details }, { status });
+    return NextResponse.json({ error: "ลบ role ไม่ได้", details }, { status });
   }
 }

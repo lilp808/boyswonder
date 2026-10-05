@@ -14,11 +14,34 @@ type Member = {
   name: string;
   subtitle: string;
   avatar_url: string;
+  bg_url: string;
+  roles: { name: string; color: string }[];
   sort_order: number;
   is_active: boolean;
   score: number;
 };
 type FeedEntry = { t: string; name: string; delta: number };
+
+function RoleChips({ roles }: { roles: Member["roles"] }) {
+  if (!roles || roles.length === 0) return null;
+  return (
+    <span className="flex flex-wrap gap-1">
+      {roles.map((r) => (
+        <span
+          key={r.name}
+          style={
+            r.color
+              ? { backgroundColor: `${r.color}22`, color: r.color, borderColor: `${r.color}66` }
+              : undefined
+          }
+          className="rounded border border-white/15 bg-high px-1.5 py-px text-[10px] font-semibold uppercase"
+        >
+          {r.name}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 function RankIcon({ index }: { index: number }) {
   if (index === 0) return <Trophy size={24} className="text-amber-300" />;
@@ -289,17 +312,31 @@ export default function LeaderboardPage() {
             return (
               <li
                 key={s.name}
-                className={`flex items-center gap-4 rounded-xl border p-4 transition-colors ${
+                style={
+                  s.bg_url
+                    ? {
+                        backgroundImage: `url(${s.bg_url})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : undefined
+                }
+                className={`relative flex items-center gap-4 overflow-hidden rounded-xl border p-4 transition-colors ${
                   i === 0
                     ? "border-mint/50 bg-mint/5"
                     : "border-white/10 bg-low hover:bg-panel"
                 }`}
               >
-                <span className="flex w-10 shrink-0 items-center justify-center">
+                {s.bg_url && (
+                  <div className="pointer-events-none absolute inset-0 bg-black/70" />
+                )}
+                <span className="relative flex w-10 shrink-0 items-center justify-center">
                   <RankIcon index={i} />
                 </span>
-                <Avatar m={s} />
-                <div className="flex-1">
+                <span className="relative">
+                  <Avatar m={s} />
+                </span>
+                <div className="relative flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="font-display font-bold">
                       {s.name}
@@ -317,6 +354,11 @@ export default function LeaderboardPage() {
                       {s.score}
                     </span>
                   </div>
+                  {(s.roles?.length > 0) && (
+                    <div className="mt-1.5">
+                      <RoleChips roles={s.roles} />
+                    </div>
+                  )}
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
                     <div
                       className={`h-full rounded-full ${

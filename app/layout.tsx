@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Trophy, Vote } from "lucide-react";
+import { Pencil, Trophy, Vote } from "lucide-react";
 import { DEFAULT_SETTINGS } from "@/lib/members";
 import { getSettings, isSheetsConfigured } from "@/lib/sheets";
 import "./globals.css";
@@ -57,6 +57,14 @@ export default async function RootLayout({
               >
                 <Vote size={16} />
                 โหวต
+              </Link>
+              <Link
+                href="/edit"
+                title="แก้ไขข้อมูลเว็บ"
+                className="flex items-center gap-1.5 rounded-lg bg-high px-3 py-2 text-sm font-semibold text-faint transition-colors hover:bg-highest hover:text-ink"
+              >
+                <Pencil size={16} />
+                <span className="hidden sm:inline">edit</span>
               </Link>
             </div>
           </nav>

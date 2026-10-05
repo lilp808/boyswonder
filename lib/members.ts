@@ -16,10 +16,17 @@ export type ScoreEntry = {
 };
 
 // โปรไฟล์สมาชิกแบบเต็ม (ตัวจริงอยู่ในตาราง members บน Supabase)
+export type Role = {
+  name: string;
+  color: string;
+};
+
 export type MemberProfile = {
   name: string;
   subtitle: string;
   avatar_url: string;
+  bg_url: string;
+  roles: Role[];
   sort_order: number;
   is_active: boolean;
   score: number;

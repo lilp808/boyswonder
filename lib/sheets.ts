@@ -131,6 +131,7 @@ export type MemberRow = {
   name: string;
   subtitle: string;
   avatar_url: string;
+  bg_url: string;
   sort_order: number;
   is_active: boolean;
 };
@@ -138,7 +139,7 @@ export type MemberRow = {
 export async function getMembersRaw(): Promise<MemberRow[]> {
   const { data, error } = await db()
     .from("members")
-    .select("name,subtitle,avatar_url,sort_order,is_active")
+    .select("name,subtitle,avatar_url,bg_url,sort_order,is_active")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
   if (error) throw error;
@@ -146,9 +147,49 @@ export async function getMembersRaw(): Promise<MemberRow[]> {
     name: r.name as string,
     subtitle: (r.subtitle as string) ?? "",
     avatar_url: (r.avatar_url as string) ?? "",
+    bg_url: ((r as Record<string, unknown>).bg_url as string) ?? "",
     sort_order: (r.sort_order as number) ?? 0,
     is_active: (r.is_active as boolean) ?? true,
   }));
+}
+
+export type RoleRow = { name: string; color: string; sort_order: number };
+
+export async function getRolesRaw(): Promise<RoleRow[]> {
+  const { data, error } = await db()
+    .from("roles")
+    .select("name,color,sort_order")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    name: r.name as string,
+    color: (r.color as string) ?? "",
+    sort_order: (r.sort_order as number) ?? 0,
+  }));
+}
+
+async function getRolesMap(): Promise<Map<string, { name: string; color: string }[]>> {
+  try {
+    const [roles, links] = await Promise.all([
+      getRolesRaw(),
+      db().from("member_roles").select("member_name,role_name"),
+    ]);
+    if (links.error) throw links.error;
+    const colorOf = new Map(roles.map((r) => [r.name, r.color]));
+    const map = new Map<string, { name: string; color: string }[]>();
+    for (const l of links.data ?? []) {
+      const mn = l.member_name as string;
+      const rn = l.role_name as string;
+      if (!mn || !rn) continue;
+      const arr = map.get(mn) ?? [];
+      arr.push({ name: rn, color: colorOf.get(rn) ?? "" });
+      map.set(mn, arr);
+    }
+    return map as Map<string, { name: string; color: string }[]>;
+  } catch {
+    return new Map();
+  }
 }
 
 export async function getMembersWithScores(): Promise<MemberProfile[]> {
@@ -162,6 +203,8 @@ export async function getMembersWithScores(): Promise<MemberProfile[]> {
       name: s.name,
       subtitle: SUBTITLE[s.name] ?? "",
       avatar_url: "",
+      bg_url: "",
+      roles: [],
       sort_order: i,
       is_active: true,
       score: s.score,
@@ -173,6 +216,8 @@ export async function getMembersWithScores(): Promise<MemberProfile[]> {
       name: s.name,
       subtitle: SUBTITLE[s.name] ?? "",
       avatar_url: "",
+      bg_url: "",
+      roles: [],
       sort_order: i,
       is_active: true,
       score: s.score,
@@ -182,7 +227,71 @@ export async function getMembersWithScores(): Promise<MemberProfile[]> {
   if (error) throw new Error("อ่านคะแนนจาก Supabase ไม่ได้: " + error.message);
   const map = new Map<string, number>();
   for (const r of data ?? []) map.set(r.name, r.score ?? 0);
-  return rows.map((m) => ({ ...m, score: map.get(m.name) ?? 0 }));
+  const rolesMap = await getRolesMap();
+  return rows.map((m) => ({ ...m, roles: rolesMap.get(m.name) ?? [], score: map.get(m.name) ?? 0 }));
+}
+
+// ---------- roles ----------
+export async function getRoles(): Promise<RoleRow[]> {
+  try {
+    return await getRolesRaw();
+  } catch {
+    return [];
+  }
+}
+
+export async function addRole(input: { name: string; color?: string }): Promise<void> {
+  const name = input.name.trim();
+  if (!name) throw new Error("ชื่อ role ห้ามว่าง");
+  const { error } = await db()
+    .from("roles")
+    .insert({ name, color: (input.color ?? "").trim(), sort_order: 999 });
+  if (error) throw new Error("เพิ่ม role ไม่ได้: " + error.message);
+}
+
+export async function updateRole(
+  oldName: string,
+  patch: { name?: string; color?: string; sort_order?: number }
+): Promise<void> {
+  const c = db();
+  const newName = (patch.name ?? oldName).trim();
+  if (!newName) throw new Error("ชื่อ role ห้ามว่าง");
+  if (newName !== oldName) {
+    // เปลี่ยนชื่อ role + พาประวัติการผูกไปด้วย (กัน DB ที่ FK cascade ยังไม่เข้า)
+    const { error: linkErr } = await c
+      .from("member_roles")
+      .update({ role_name: newName })
+      .eq("role_name", oldName);
+    if (linkErr) throw new Error("เปลี่ยนชื่อ role ไม่ได้: " + linkErr.message);
+    const { error } = await c.from("roles").update({ name: newName }).eq("name", oldName);
+    if (error) throw new Error("เปลี่ยนชื่อ role ไม่ได้: " + error.message);
+  }
+  const update: Record<string, unknown> = {};
+  if (patch.color !== undefined) update.color = patch.color.trim();
+  if (patch.sort_order !== undefined) update.sort_order = patch.sort_order;
+  if (Object.keys(update).length === 0) return;
+  const { error } = await c.from("roles").update(update).eq("name", newName);
+  if (error) throw new Error("อัปเดต role ไม่ได้: " + error.message);
+}
+
+export async function deleteRole(name: string): Promise<void> {
+  const c = db();
+  // ลบการผูกก่อน (กัน DB ที่ FK cascade ยังไม่เข้า) แล้วค่อยลบ role
+  await c.from("member_roles").delete().eq("role_name", name);
+  const { error } = await c.from("roles").delete().eq("name", name);
+  if (error) throw new Error("ลบ role ไม่ได้: " + error.message);
+}
+
+export async function setMemberRoles(memberName: string, roleNames: string[]): Promise<void> {
+  const c = db();
+  const clean = [...new Set(roleNames.map((r) => r.trim()).filter(Boolean))];
+  const { error: delErr } = await c.from("member_roles").delete().eq("member_name", memberName);
+  if (delErr) throw new Error("ตั้งค่า role ไม่ได้: " + delErr.message);
+  if (clean.length === 0) return;
+  const { error: insErr } = await c
+    .from("member_roles")
+    .insert(clean.map((role_name) => ({ member_name: memberName, role_name })));
+  if (insErr) throw new Error("ตั้งค่า role ไม่ได้: " + insErr.message);
 }
 
 export async function addMember(input: {
@@ -213,8 +322,10 @@ export async function updateMember(
     name?: string;
     subtitle?: string;
     avatar_url?: string;
+    bg_url?: string;
     sort_order?: number;
     is_active?: boolean;
+    roles?: string[];
   }
 ): Promise<void> {
   const c = db();
@@ -230,21 +341,64 @@ export async function updateMember(
   const update: Record<string, unknown> = {};
   if (patch.subtitle !== undefined) update.subtitle = patch.subtitle.trim();
   if (patch.avatar_url !== undefined) update.avatar_url = patch.avatar_url.trim();
+  if (patch.bg_url !== undefined) update.bg_url = patch.bg_url.trim();
   if (patch.sort_order !== undefined) update.sort_order = patch.sort_order;
   if (patch.is_active !== undefined) update.is_active = patch.is_active;
-  if (Object.keys(update).length === 0) return;
-  const { error } = await c.from("members").update(update).eq("name", newName);
-  if (error) throw new Error("อัปเดตสมาชิกไม่ได้: " + error.message);
+  if (Object.keys(update).length > 0) {
+    const { error } = await c.from("members").update(update).eq("name", newName);
+    if (error) throw new Error("อัปเดตสมาชิกไม่ได้: " + error.message);
+  }
+  if (patch.roles !== undefined) {
+    await setMemberRoles(newName, patch.roles);
+  }
 }
 
-export async function deleteMember(name: string, hard = false): Promise<void> {
+export type DeletedLogEntry = {
+  id: number;
+  name: string;
+  reason: string;
+  hard: boolean;
+  t: string;
+};
+
+export async function getDeletedLog(limit = 20): Promise<DeletedLogEntry[]> {
+  try {
+    const { data, error } = await db()
+      .from("deleted_log")
+      .select("id,name,reason,hard,created_at")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data ?? []).map((r) => ({
+      id: r.id as number,
+      name: r.name as string,
+      reason: (r.reason as string) ?? "",
+      hard: Boolean(r.hard),
+      t: r.created_at as string,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function deleteMember(name: string, hard = false, reason = ""): Promise<void> {
   const c = db();
+  const why = reason.trim();
   if (hard) {
+    if (!why) throw new Error("ลบถาวรต้องใส่เหตุผลด้วย");
+    // เก็บประวัติก่อนลบจริง
+    const { error: logErr } = await c
+      .from("deleted_log")
+      .insert({ name, reason: why, hard: true });
+    if (logErr) throw new Error("บันทึกประวัติการลบไม่ได้: " + logErr.message);
     const { error: mErr } = await c.from("members").delete().eq("name", name);
     if (mErr) throw new Error("ลบสมาชิกไม่ได้: " + mErr.message);
     const { error: sErr } = await c.from("scores").delete().eq("name", name);
     if (sErr) throw new Error("ลบคะแนนไม่ได้: " + sErr.message);
   } else {
+    if (why) {
+      await c.from("deleted_log").insert({ name, reason: why, hard: false });
+    }
     const { error } = await c
       .from("members")
       .update({ is_active: false })

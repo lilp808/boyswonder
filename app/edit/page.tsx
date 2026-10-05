@@ -2,15 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  Globe,
   ImagePlus,
   Loader2,
   Lock,
+  LogOut,
   Plus,
   Save,
+  Tag,
   Trash2,
   Users,
-  Globe,
-  LogOut,
 } from "lucide-react";
 import { AVATAR, DEFAULT_SETTINGS, type SiteSettings } from "@/lib/members";
 
@@ -18,10 +19,16 @@ type Member = {
   name: string;
   subtitle: string;
   avatar_url: string;
+  bg_url: string;
+  roles: { name: string; color: string }[];
   sort_order: number;
   is_active: boolean;
   score: number;
 };
+
+type Role = { name: string; color: string; sort_order: number };
+
+type DeletedLog = { id: number; name: string; reason: string; hard: boolean; t: string };
 
 const PW_KEY = "bw-admin-pw";
 
@@ -52,9 +59,11 @@ export default function EditPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [tab, setTab] = useState<"members" | "site">("members");
+  const [tab, setTab] = useState<"members" | "roles" | "site">("members");
 
   const [members, setMembers] = useState<Member[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [deletedLog, setDeletedLog] = useState<DeletedLog[]>([]);
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -76,16 +85,22 @@ export default function EditPage() {
     setLoading(true);
     setError("");
     try {
-      const [mRes, sRes] = await Promise.all([
+      const [mRes, sRes, rRes] = await Promise.all([
         fetch("/api/admin/members", { headers: { "x-admin-password": password }, cache: "no-store" }),
         fetch("/api/settings", { cache: "no-store" }),
+        fetch("/api/admin/roles", { headers: { "x-admin-password": password }, cache: "no-store" }),
       ]);
       const mData = await mRes.json();
       if (!mRes.ok) throw new Error(mData.details ?? mData.error ?? "โหลดสมาชิกไม่ได้");
       setMembers(mData.members ?? []);
+      setDeletedLog(mData.deletedLog ?? []);
       if (sRes.ok) {
         const sData = await sRes.json();
         if (sData.settings) setSettings(sData.settings);
+      }
+      if (rRes.ok) {
+        const rData = await rRes.json();
+        setRoles(rData.roles ?? []);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "โหลดไม่ได้");
@@ -194,7 +209,7 @@ export default function EditPage() {
     }
   }
 
-  async function saveMember(m: Member, patch: Partial<Member> & { newName?: string }) {
+  async function saveMember(m: Member, patch: Partial<Member> & { newName?: string; roleNames?: string[] }) {
     setSaving(m.name);
     setError("");
     try {
@@ -206,8 +221,10 @@ export default function EditPage() {
           name: patch.newName ?? m.name,
           subtitle: patch.subtitle ?? m.subtitle,
           avatar_url: patch.avatar_url ?? m.avatar_url,
+          bg_url: patch.bg_url ?? m.bg_url,
           sort_order: patch.sort_order ?? m.sort_order,
           is_active: patch.is_active ?? m.is_active,
+          roles: patch.roleNames ?? patch.roles?.map((r) => r.name),
         }),
       });
       const data = await res.json();
@@ -221,20 +238,20 @@ export default function EditPage() {
     }
   }
 
-  async function removeMember(m: Member, hard: boolean) {
-    const label = hard ? `ลบ ${m.name} ถาวร (พร้อมคะแนน) ใช่ไหม?` : `ปิดใช้งาน ${m.name} ใช่ไหม? (ซ่อนจากหน้าโหวต)`;
-    if (!confirm(label)) return;
+  async function removeMember(m: Member, hard: boolean, reason = "") {
+    if (!hard && !confirm(`ปิดใช้งาน ${m.name} ใช่ไหม? (ซ่อนจากหน้าโหวต)`)) return;
     setSaving(m.name);
     setError("");
     try {
       const res = await fetch(`/api/admin/members${hard ? "?hard=1" : ""}`, {
         method: "DELETE",
         headers: headers(pw),
-        body: JSON.stringify({ name: m.name }),
+        body: JSON.stringify({ name: m.name, reason }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.details ?? data.error ?? "ลบไม่ได้");
       setMembers(data.members ?? []);
+      if (data.deletedLog) setDeletedLog(data.deletedLog);
       flash(hard ? "ลบถาวรแล้ว" : "ปิดใช้งานแล้ว");
     } catch (e) {
       setError(e instanceof Error ? e.message : "ลบไม่ได้");
@@ -243,8 +260,80 @@ export default function EditPage() {
     }
   }
 
-  async function saveSettings() {
-    setSaving("settings");
+  // ---------- roles ----------
+  const [newRole, setNewRole] = useState("");
+  const [newRoleColor, setNewRoleColor] = useState("#4edea3");
+
+  async function addNewRole() {
+    if (!newRole.trim()) {
+      setError("ต้องใส่ชื่อ role ก่อน");
+      return;
+    }
+    setSaving("role-new");
+    setError("");
+    try {
+      const res = await fetch("/api/admin/roles", {
+        method: "POST",
+        headers: headers(pw),
+        body: JSON.stringify({ name: newRole.trim(), color: newRoleColor }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.details ?? data.error ?? "เพิ่มไม่ได้");
+      setRoles(data.roles ?? []);
+      setNewRole("");
+      flash("เพิ่ม role แล้ว");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "เพิ่มไม่ได้");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function saveRole(r: Role, patch: { name: string; color: string }) {
+    setSaving(`role-${r.name}`);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/roles", {
+        method: "PUT",
+        headers: headers(pw),
+        body: JSON.stringify({ oldName: r.name, name: patch.name, color: patch.color }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.details ?? data.error ?? "บันทึกไม่ได้");
+      setRoles(data.roles ?? []);
+      // ชื่อ role เปลี่ยน → รีโหลดสมาชิกให้ role ตรงกัน
+      await loadAll(pw).catch(() => {});
+      flash("บันทึก role แล้ว");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "บันทึกไม่ได้");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function removeRole(r: Role) {
+    if (!confirm(`ลบ role "${r.name}" ใช่ไหม? (จะหลุดจากทุกคนที่ติดอยู่)`)) return;
+    setSaving(`role-${r.name}`);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/roles", {
+        method: "DELETE",
+        headers: headers(pw),
+        body: JSON.stringify({ name: r.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.details ?? data.error ?? "ลบไม่ได้");
+      setRoles(data.roles ?? []);
+      await loadAll(pw).catch(() => {});
+      flash("ลบ role แล้ว");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "ลบไม่ได้");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function saveSettings() {    setSaving("settings");
     setError("");
     try {
       const res = await fetch("/api/admin/settings", {
@@ -331,6 +420,13 @@ export default function EditPage() {
           สมาชิก ({members.length})
         </button>
         <button
+          onClick={() => setTab("roles")}
+          className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold ${tab === "roles" ? "bg-high text-ink" : "bg-low text-sub hover:text-ink"}`}
+        >
+          <Tag size={15} />
+          โรล ({roles.length})
+        </button>
+        <button
           onClick={() => setTab("site")}
           className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold ${tab === "site" ? "bg-high text-ink" : "bg-low text-sub hover:text-ink"}`}
         >
@@ -400,6 +496,7 @@ export default function EditPage() {
             <MemberRow
               key={m.name}
               m={m}
+              allRoles={roles}
               busy={saving === m.name}
               uploading={uploading === m.name}
               onSave={saveMember}
@@ -409,6 +506,74 @@ export default function EditPage() {
           ))}
           {members.length === 0 && (
             <p className="py-8 text-center text-sm text-faint">ยังไม่มีสมาชิก</p>
+          )}
+
+          {deletedLog.length > 0 && (
+            <div className="rounded-xl border border-white/10 bg-lowest p-4">
+              <div className="mb-2 text-sm font-bold text-sub">ประวัติการลบ</div>
+              <div className="flex flex-col gap-1.5">
+                {deletedLog.map((d) => (
+                  <div key={d.id} className="flex flex-wrap items-baseline gap-x-2 text-xs">
+                    <span className={`rounded px-1.5 py-0.5 font-semibold ${d.hard ? "bg-softred/10 text-softred" : "bg-high text-sub"}`}>
+                      {d.hard ? "ลบถาวร" : "ปิดใช้งาน"}
+                    </span>
+                    <span className="font-bold text-ink">{d.name}</span>
+                    <span className="text-sub">{d.reason || "—"}</span>
+                    <span className="ml-auto text-faint">
+                      {new Date(d.t).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      ) : tab === "roles" ? (
+        <section className="mt-4 flex flex-col gap-3">
+          <div className="rounded-xl border border-mint/30 bg-mint/5 p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-bold">
+              <Plus size={16} className="text-mint" />
+              เพิ่มโรลใหม่
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                placeholder="ชื่อโรล เช่น หัวตี้, สายซัพ"
+                className="min-w-0 flex-1 rounded-lg bg-lowest px-3 py-2 text-sm placeholder-faint focus:outline-none"
+              />
+              <label className="flex items-center gap-2 text-xs text-sub">
+                สี
+                <input
+                  type="color"
+                  value={newRoleColor}
+                  onChange={(e) => setNewRoleColor(e.target.value)}
+                  className="h-8 w-10 cursor-pointer rounded bg-lowest"
+                />
+              </label>
+              <button
+                onClick={addNewRole}
+                disabled={saving === "role-new" || !newRole.trim()}
+                className="rounded-lg bg-mint px-5 py-2 text-sm font-bold text-black hover:brightness-110 disabled:opacity-40"
+              >
+                {saving === "role-new" ? "กำลังเพิ่ม…" : "เพิ่มเลย"}
+              </button>
+            </div>
+          </div>
+
+          {roles.map((r) => (
+            <RoleRow
+              key={r.name}
+              r={r}
+              busy={saving === `role-${r.name}`}
+              onSave={saveRole}
+              onDelete={removeRole}
+            />
+          ))}
+          {roles.length === 0 && (
+            <p className="py-8 text-center text-sm text-faint">
+              ยังไม่มีโรล — เพิ่มโรลก่อน แล้วค่อยไปติดให้แต่ละคนในแท็บสมาชิก
+            </p>
           )}
         </section>
       ) : (
@@ -464,6 +629,7 @@ export default function EditPage() {
 
 function MemberRow({
   m,
+  allRoles,
   busy,
   uploading,
   onSave,
@@ -471,19 +637,29 @@ function MemberRow({
   onUpload,
 }: {
   m: Member;
+  allRoles: Role[];
   busy: boolean;
   uploading: boolean;
-  onSave: (m: Member, patch: Partial<Member> & { newName?: string }) => void;
-  onDelete: (m: Member, hard: boolean) => void;
+  onSave: (m: Member, patch: Partial<Member> & { newName?: string; roleNames?: string[] }) => void;
+  onDelete: (m: Member, hard: boolean, reason?: string) => void;
   onUpload: (f: File, apply: (url: string) => void) => void;
 }) {
   const [name, setName] = useState(m.name);
   const [subtitle, setSubtitle] = useState(m.subtitle);
   const [avatar, setAvatar] = useState(m.avatar_url);
+  const [bg, setBg] = useState(m.bg_url);
+  const [roleNames, setRoleNames] = useState<string[]>(m.roles.map((r) => r.name));
   const [order, setOrder] = useState(m.sort_order);
   const [active, setActive] = useState(m.is_active);
+  const [confirmHard, setConfirmHard] = useState(false);
+  const [hardReason, setHardReason] = useState("");
+  const sameRoles =
+    roleNames.length === m.roles.length && roleNames.every((r) => m.roles.some((x) => x.name === r));
   const dirty =
-    name !== m.name || subtitle !== m.subtitle || avatar !== m.avatar_url || order !== m.sort_order || active !== m.is_active;
+    name !== m.name || subtitle !== m.subtitle || avatar !== m.avatar_url || bg !== m.bg_url || !sameRoles || order !== m.sort_order || active !== m.is_active;
+
+  const toggleRole = (rn: string) =>
+    setRoleNames((prev) => (prev.includes(rn) ? prev.filter((x) => x !== rn) : [...prev, rn]));
 
   return (
     <div className={`rounded-xl border p-4 ${m.is_active ? "border-white/10 bg-low" : "border-white/5 bg-lowest opacity-70"}`}>
@@ -507,7 +683,32 @@ function MemberRow({
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ชื่อ" className="rounded-lg bg-lowest px-3 py-2 text-sm focus:outline-none" />
         <input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="ฉายา" className="rounded-lg bg-lowest px-3 py-2 text-sm focus:outline-none" />
         <input value={avatar} onChange={(e) => setAvatar(e.target.value)} placeholder="ลิงก์รูปโปรไฟล์" className="rounded-lg bg-lowest px-3 py-2 text-sm focus:outline-none sm:col-span-2" />
+        <input value={bg} onChange={(e) => setBg(e.target.value)} placeholder="ลิงก์รูปพื้นหลังการ์ด" className="rounded-lg bg-lowest px-3 py-2 text-sm focus:outline-none sm:col-span-2" />
       </div>
+
+      {allRoles.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {allRoles.map((r) => {
+            const on = roleNames.includes(r.name);
+            return (
+              <button
+                key={r.name}
+                onClick={() => toggleRole(r.name)}
+                style={
+                  on && r.color
+                    ? { backgroundColor: `${r.color}22`, color: r.color, borderColor: `${r.color}66` }
+                    : undefined
+                }
+                className={`rounded-lg border px-3 py-1 text-xs font-semibold transition-all ${
+                  on ? "border-mint/50 bg-mint/10 text-ink" : "border-white/10 bg-lowest text-faint hover:text-sub"
+                }`}
+              >
+                {on ? "✓ " : ""}{r.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
         <label className="flex items-center gap-1.5 text-sub">
@@ -538,15 +739,34 @@ function MemberRow({
             }}
           />
         </label>
+        <label className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-high px-3 py-1.5 font-semibold text-sub hover:text-ink">
+          <ImagePlus size={13} />
+          {uploading ? "อัปโหลด…" : "พื้นหลัง"}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onUpload(f, setBg);
+              e.target.value = "";
+            }}
+          />
+        </label>
         {avatar && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatar} alt="preview" className="h-7 w-7 rounded object-cover" />
+        )}
+        {bg && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={bg} alt="bg preview" className="h-7 w-12 rounded object-cover" />
         )}
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button
-          onClick={() => onSave(m, { newName: name.trim() || m.name, subtitle, avatar_url: avatar, sort_order: order, is_active: active })}
+          onClick={() => onSave(m, { newName: name.trim() || m.name, subtitle, avatar_url: avatar, bg_url: bg, roleNames, sort_order: order, is_active: active })}
           disabled={busy || !dirty}
           className="flex items-center gap-1.5 rounded-lg bg-mint px-4 py-1.5 text-sm font-bold text-black hover:brightness-110 disabled:opacity-30"
         >
@@ -560,15 +780,111 @@ function MemberRow({
         >
           {m.is_active ? "ปิดใช้งาน" : "ซ่อนอยู่"}
         </button>
-        <button
-          onClick={() => onDelete(m, true)}
-          disabled={busy}
-          className="ml-auto flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-softred/70 hover:bg-softred/10 hover:text-softred"
-        >
-          <Trash2 size={13} />
-          ลบถาวร
-        </button>
+        {!confirmHard ? (
+          <button
+            onClick={() => setConfirmHard(true)}
+            disabled={busy}
+            className="ml-auto flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-softred/70 hover:bg-softred/10 hover:text-softred"
+          >
+            <Trash2 size={13} />
+            ลบถาวร
+          </button>
+        ) : null}
       </div>
+
+      {confirmHard && (
+        <div className="mt-3 rounded-lg border border-softred/40 bg-softred/5 p-3">
+          <p className="text-sm font-bold text-softred">
+            ลบ {m.name} ถาวร (พร้อมคะแนน) — บอกเหตุผลไว้หน่อยว่าลบเพราะอะไร
+          </p>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input
+              value={hardReason}
+              onChange={(e) => setHardReason(e.target.value)}
+              placeholder="เหตุผล เช่น ออกจากแก๊งแล้ว, ชื่อซ้ำ"
+              autoFocus
+              className="flex-1 rounded-lg bg-lowest px-3 py-2 text-sm placeholder-faint focus:outline-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmHard(false)}
+                disabled={busy}
+                className="rounded-lg bg-high px-4 py-2 text-sm font-semibold text-sub hover:text-ink disabled:opacity-30"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(m, true, hardReason);
+                  setConfirmHard(false);
+                }}
+                disabled={busy || !hardReason.trim()}
+                className="rounded-lg bg-softred px-4 py-2 text-sm font-bold text-black hover:brightness-110 disabled:opacity-30"
+              >
+                {busy ? "กำลังลบ…" : "ยืนยันลบ"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RoleRow({
+  r,
+  busy,
+  onSave,
+  onDelete,
+}: {
+  r: Role;
+  busy: boolean;
+  onSave: (r: Role, patch: { name: string; color: string }) => void;
+  onDelete: (r: Role) => void;
+}) {
+  const [name, setName] = useState(r.name);
+  const [color, setColor] = useState(r.color || "#4edea3");
+  const dirty = name.trim() !== r.name || color !== (r.color || "#4edea3");
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-low p-3">
+      <span
+        className="rounded px-2 py-0.5 text-xs font-bold uppercase"
+        style={r.color ? { backgroundColor: `${r.color}22`, color: r.color } : undefined}
+      >
+        {r.name}
+      </span>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="ชื่อโรล"
+        className="min-w-0 flex-1 rounded-lg bg-lowest px-3 py-1.5 text-sm focus:outline-none"
+      />
+      <label className="flex items-center gap-2 text-xs text-sub">
+        สี
+        <input
+          type="color"
+          value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : "#4edea3"}
+          onChange={(e) => setColor(e.target.value)}
+          className="h-8 w-10 cursor-pointer rounded bg-lowest"
+        />
+      </label>
+      <button
+        onClick={() => onSave(r, { name: name.trim() || r.name, color })}
+        disabled={busy || !dirty}
+        className="flex items-center gap-1.5 rounded-lg bg-mint px-4 py-1.5 text-sm font-bold text-black hover:brightness-110 disabled:opacity-30"
+      >
+        <Save size={14} />
+        {busy ? "บันทึก…" : "บันทึก"}
+      </button>
+      <button
+        onClick={() => onDelete(r)}
+        disabled={busy}
+        className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-softred/70 hover:bg-softred/10 hover:text-softred"
+      >
+        <Trash2 size={13} />
+        ลบ
+      </button>
     </div>
   );
 }

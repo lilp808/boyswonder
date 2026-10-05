@@ -134,3 +134,75 @@ begin
   end if;
 end
 $$;
+
+-- 10) ระบบ role: role กลาง + ผูก role ให้แต่ละสมาชิก (จัดการผ่านหน้า /edit)
+create table if not exists roles (
+  name text primary key,
+  color text not null default '',
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+alter table roles enable row level security;
+
+create table if not exists member_roles (
+  member_name text not null,
+  role_name text not null,
+  created_at timestamptz not null default now(),
+  primary key (member_name, role_name)
+);
+alter table member_roles enable row level security;
+-- (ทั้งสองตารางไม่สร้าง policy = anon อ่านไม่ได้ ให้ server ใช้ service_role เท่านั้น)
+
+-- FK แบบ cascade: เปลี่ยนชื่อ/ลบสมาชิกหรือ role แล้วตารางผูกอัปเดตตามเอง
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'member_roles_member_fk') then
+    alter table member_roles
+      add constraint member_roles_member_fk
+      foreign key (member_name) references members (name)
+      on update cascade on delete cascade;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'member_roles_role_fk') then
+    alter table member_roles
+      add constraint member_roles_role_fk
+      foreign key (role_name) references roles (name)
+      on update cascade on delete cascade;
+  end if;
+end
+$$;
+
+-- 11) รูปพื้นหลังการ์ดสมาชิก (ใส่ผ่านหน้า /edit)
+alter table members add column if not exists bg_url text not null default '';
+
+-- 12) อัปเดตฟังก์ชันเปลี่ยนชื่อให้พาประวัติ role ไปด้วย (กัน DB ที่ FK ยังไม่เข้า)
+create or replace function rename_member(p_old text, p_new text)
+returns void
+language plpgsql
+as $$
+begin
+  if p_old is null or p_new is null or btrim(p_old) = '' or btrim(p_new) = '' then
+    raise exception 'ชื่อห้ามว่าง';
+  end if;
+  if p_old = p_new then
+    return;
+  end if;
+  if exists (select 1 from members where name = p_new) then
+    raise exception 'มีชื่อนี้อยู่แล้ว';
+  end if;
+  update members set name = p_new where name = p_old;
+  update scores set name = p_new, updated_at = now() where name = p_old;
+  update votes_log set name = p_new where name = p_old;
+  update member_roles set member_name = p_new where member_name = p_old;
+end;
+$$;
+
+-- 13) ประวัติการลบสมาชิก + เหตุผล (ดูได้ในหน้า /edit)
+create table if not exists deleted_log (
+  id bigint generated always as identity primary key,
+  name text not null,
+  reason text not null default '',
+  hard boolean not null default false,
+  created_at timestamptz not null default now()
+);
+alter table deleted_log enable row level security;
+-- (ไม่สร้าง policy = anon อ่านไม่ได้ ให้ server ใช้ service_role เท่านั้น)

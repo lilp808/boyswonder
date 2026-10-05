@@ -20,6 +20,8 @@ type Member = {
   name: string;
   subtitle: string;
   avatar_url: string;
+  bg_url: string;
+  roles: { name: string; color: string }[];
   sort_order: number;
   is_active: boolean;
   score: number;
@@ -54,8 +56,7 @@ function scoreColor(score: number): string {
   return "text-ink";
 }
 
-function Avatar({ m }: { m: Member }) {
-  if (m.avatar_url) {
+function Avatar({ m }: { m: Member }) {  if (m.avatar_url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -74,6 +75,27 @@ function Avatar({ m }: { m: Member }) {
         <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-softred" />
       )}
     </div>
+  );
+}
+
+function RoleChips({ roles }: { roles: Member["roles"] }) {
+  if (!roles || roles.length === 0) return null;
+  return (
+    <span className="flex flex-wrap gap-1">
+      {roles.map((r) => (
+        <span
+          key={r.name}
+          style={
+            r.color
+              ? { backgroundColor: `${r.color}22`, color: r.color, borderColor: `${r.color}66` }
+              : undefined
+          }
+          className="rounded border border-white/15 bg-high px-1.5 py-px text-[10px] font-semibold uppercase"
+        >
+          {r.name}
+        </span>
+      ))}
+    </span>
   );
 }
 
@@ -285,12 +307,24 @@ export default function VotePage() {
               return (
                 <div
                   key={s.name}
+                  style={
+                    s.bg_url
+                      ? {
+                          backgroundImage: `url(${s.bg_url})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }
+                      : undefined
+                  }
                   className="group relative flex flex-col justify-between overflow-hidden rounded-xl bg-low p-4 shadow-sm transition-all duration-200 hover:bg-panel"
                 >
+                  {s.bg_url && (
+                    <div className="pointer-events-none absolute inset-0 bg-black/70" />
+                  )}
                   {s.score < 0 && (
                     <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-softred/5 blur-2xl" />
                   )}
-                  <div className="mb-4 flex items-start justify-between gap-2">
+                  <div className="relative mb-4 flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-3">
                       <Avatar m={s} />
                       <div className="flex min-w-0 flex-col">
@@ -307,6 +341,11 @@ export default function VotePage() {
                         <span className="text-xs text-sub">
                           {s.subtitle}
                         </span>
+                        {s.roles?.length > 0 && (
+                          <span className="mt-1">
+                            <RoleChips roles={s.roles} />
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-col items-end">
@@ -320,7 +359,7 @@ export default function VotePage() {
                       </span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="relative grid grid-cols-2 gap-2 pt-1">
                     <button
                       disabled={busy}
                       onClick={() => vote(s.name, -1)}

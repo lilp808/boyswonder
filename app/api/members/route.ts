@@ -12,6 +12,8 @@ export async function GET() {
         name,
         subtitle: SUBTITLE[name] ?? "",
         avatar_url: "",
+        bg_url: "",
+        roles: [],
         sort_order: i,
         is_active: true,
         score: 0,
