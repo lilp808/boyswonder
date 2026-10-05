@@ -285,6 +285,9 @@ export default function EditPage() {
               className="w-full rounded-lg bg-lowest px-4 py-2.5 text-sm text-ink placeholder-faint focus:bg-panel focus:outline-none"
             />
             {authError && <p className="text-sm text-softred">{authError}</p>}
+            <p className="text-xs text-faint">
+              รหัส = บอยส์วอนเดอร์ พิมพ์เล็ก ภาษาอังกฤษ
+            </p>
             <button
               type="submit"
               disabled={authBusy || !pw}
