@@ -239,7 +239,6 @@ export default function EditPage() {
   }
 
   async function removeMember(m: Member, hard: boolean, reason = "") {
-    if (!hard && !confirm(`ปิดใช้งาน ${m.name} ใช่ไหม? (ซ่อนจากหน้าโหวต)`)) return;
     setSaving(m.name);
     setError("");
     try {
@@ -651,8 +650,8 @@ function MemberRow({
   const [roleNames, setRoleNames] = useState<string[]>(m.roles.map((r) => r.name));
   const [order, setOrder] = useState(m.sort_order);
   const [active, setActive] = useState(m.is_active);
-  const [confirmHard, setConfirmHard] = useState(false);
-  const [hardReason, setHardReason] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<null | "soft" | "hard">(null);
+  const [deleteReason, setDeleteReason] = useState("");
   const sameRoles =
     roleNames.length === m.roles.length && roleNames.every((r) => m.roles.some((x) => x.name === r));
   const dirty =
@@ -774,40 +773,47 @@ function MemberRow({
           {busy ? "บันทึก…" : "บันทึก"}
         </button>
         <button
-          onClick={() => onDelete(m, false)}
+          onClick={() => setConfirmDelete("soft")}
           disabled={busy}
           className="rounded-lg bg-high px-4 py-1.5 text-sm font-semibold text-sub hover:text-ink disabled:opacity-30"
         >
           {m.is_active ? "ปิดใช้งาน" : "ซ่อนอยู่"}
         </button>
-        {!confirmHard ? (
-          <button
-            onClick={() => setConfirmHard(true)}
-            disabled={busy}
-            className="ml-auto flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-softred/70 hover:bg-softred/10 hover:text-softred"
-          >
-            <Trash2 size={13} />
-            ลบถาวร
-          </button>
-        ) : null}
+        <button
+          onClick={() => setConfirmDelete("hard")}
+          disabled={busy}
+          className="ml-auto flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-softred/70 hover:bg-softred/10 hover:text-softred"
+        >
+          <Trash2 size={13} />
+          ลบถาวร
+        </button>
       </div>
 
-      {confirmHard && (
-        <div className="mt-3 rounded-lg border border-softred/40 bg-softred/5 p-3">
-          <p className="text-sm font-bold text-softred">
-            ลบ {m.name} ถาวร (พร้อมคะแนน) — บอกเหตุผลไว้หน่อยว่าลบเพราะอะไร
+      {confirmDelete && (
+        <div
+          className={`mt-3 rounded-lg border p-3 ${
+            confirmDelete === "hard"
+              ? "border-softred/40 bg-softred/5"
+              : "border-white/15 bg-lowest"
+          }`}
+        >
+          <p className={`text-sm font-bold ${confirmDelete === "hard" ? "text-softred" : "text-ink"}`}>
+            {confirmDelete === "hard"
+              ? `ลบ ${m.name} ถาวร (พร้อมคะแนน)`
+              : `ปิดใช้งาน ${m.name} (ซ่อนจากหน้าโหวต)`}
+            {" "}— บอกเหตุผลไว้หน่อยว่าทำเพราะอะไร
           </p>
           <div className="mt-2 flex flex-col gap-2 sm:flex-row">
             <input
-              value={hardReason}
-              onChange={(e) => setHardReason(e.target.value)}
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
               placeholder="เหตุผล เช่น ออกจากแก๊งแล้ว, ชื่อซ้ำ"
               autoFocus
               className="flex-1 rounded-lg bg-lowest px-3 py-2 text-sm placeholder-faint focus:outline-none"
             />
             <div className="flex gap-2">
               <button
-                onClick={() => setConfirmHard(false)}
+                onClick={() => setConfirmDelete(null)}
                 disabled={busy}
                 className="rounded-lg bg-high px-4 py-2 text-sm font-semibold text-sub hover:text-ink disabled:opacity-30"
               >
@@ -815,13 +821,16 @@ function MemberRow({
               </button>
               <button
                 onClick={() => {
-                  onDelete(m, true, hardReason);
-                  setConfirmHard(false);
+                  onDelete(m, confirmDelete === "hard", deleteReason);
+                  setConfirmDelete(null);
+                  setDeleteReason("");
                 }}
-                disabled={busy || !hardReason.trim()}
-                className="rounded-lg bg-softred px-4 py-2 text-sm font-bold text-black hover:brightness-110 disabled:opacity-30"
+                disabled={busy || !deleteReason.trim()}
+                className={`rounded-lg px-4 py-2 text-sm font-bold hover:brightness-110 disabled:opacity-30 ${
+                  confirmDelete === "hard" ? "bg-softred text-black" : "bg-mint text-black"
+                }`}
               >
-                {busy ? "กำลังลบ…" : "ยืนยันลบ"}
+                {busy ? "กำลังทำ…" : "ยืนยัน"}
               </button>
             </div>
           </div>
