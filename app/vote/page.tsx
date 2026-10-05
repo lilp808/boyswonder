@@ -1,9 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AVATAR, SUBTITLE } from "@/lib/members";
+import {
+  BadgeCheck,
+  ChartColumn,
+  Flame,
+  Gavel,
+  Search,
+  ThumbsDown,
+  ThumbsUp,
+  TriangleAlert,
+  Vote,
+} from "lucide-react";
+import { AVATAR, DEFAULT_SETTINGS, type SiteSettings } from "@/lib/members";
 
-type ScoreEntry = { name: string; score: number };
+type Member = {
+  name: string;
+  subtitle: string;
+  avatar_url: string;
+  sort_order: number;
+  is_active: boolean;
+  score: number;
+};
 type FeedEntry = { t: string; name: string; delta: number };
 
 type SortMode = "all" | "neg" | "pos";
@@ -34,10 +52,34 @@ function scoreColor(score: number): string {
   return "text-ink";
 }
 
+function Avatar({ m }: { m: Member }) {
+  if (m.avatar_url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={m.avatar_url}
+        alt={m.name}
+        className="h-12 w-12 shrink-0 rounded-lg object-cover"
+      />
+    );
+  }
+  return (
+    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-highest">
+      <span className="font-display text-lg font-bold">
+        {AVATAR[m.name] ?? m.name.charAt(0)}
+      </span>
+      {m.score < 0 && (
+        <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-softred" />
+      )}
+    </div>
+  );
+}
+
 export default function VotePage() {
-  const [scores, setScores] = useState<ScoreEntry[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [feed, setFeed] = useState<FeedEntry[]>([]);
   const [total, setTotal] = useState(0);
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -48,17 +90,22 @@ export default function VotePage() {
   const refresh = useCallback(async () => {
     const t0 = performance.now();
     try {
-      const [sRes, fRes] = await Promise.all([
-        fetch("/api/scores", { cache: "no-store" }),
+      const [mRes, fRes, sRes] = await Promise.all([
+        fetch("/api/members", { cache: "no-store" }),
         fetch("/api/feed", { cache: "no-store" }),
+        fetch("/api/settings", { cache: "no-store" }),
       ]);
-      const sData = await sRes.json();
-      const fData = await fRes.json();
-      if (!sRes.ok) throw new Error(sData.details ?? sData.error ?? "โหลดไม่สำเร็จ");
-      setScores(sData.scores);
-      if (fRes.ok) {
+      const mData = await mRes.json();
+      const fData = fRes.ok ? await fRes.json() : null;
+      if (!mRes.ok) throw new Error(mData.details ?? mData.error ?? "โหลดไม่สำเร็จ");
+      setMembers(mData.members);
+      if (fData) {
         setFeed(fData.feed ?? []);
         setTotal(fData.total ?? 0);
+      }
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        if (sData.settings) setSettings(sData.settings);
       }
       setError("");
       setLatency(Math.round(performance.now() - t0));
@@ -80,7 +127,7 @@ export default function VotePage() {
   async function vote(name: string, delta: 1 | -1) {
     if (busy) return;
     setBusy(true);
-    setScores((prev) =>
+    setMembers((prev) =>
       prev.map((s) => (s.name === name ? { ...s, score: s.score + delta } : s))
     );
     setFeed((prev) =>
@@ -94,7 +141,6 @@ export default function VotePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.details ?? data.error ?? "โหวตไม่สำเร็จ");
-      setScores(data.scores);
       refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "โหวตไม่สำเร็จ");
@@ -106,16 +152,16 @@ export default function VotePage() {
 
   const visible = useMemo(() => {
     const q = query.toLowerCase().trim();
-    let list = scores.filter((s) => s.name.toLowerCase().includes(q));
+    let list = members.filter((s) => s.name.toLowerCase().includes(q));
     if (sort === "neg") list = [...list].sort((a, b) => a.score - b.score);
     else if (sort === "pos") list = [...list].sort((a, b) => b.score - a.score);
     return list;
-  }, [scores, query, sort]);
+  }, [members, query, sort]);
 
   const lowest = useMemo(() => {
-    if (scores.length === 0) return null;
-    return [...scores].sort((a, b) => a.score - b.score)[0];
-  }, [scores]);
+    if (members.length === 0) return null;
+    return [...members].sort((a, b) => a.score - b.score)[0];
+  }, [members]);
 
   const plus = feed.filter((f) => f.delta > 0).length;
   const minus = feed.filter((f) => f.delta < 0).length;
@@ -145,22 +191,20 @@ export default function VotePage() {
           <div className="relative z-10 flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded bg-high text-ink">
-                <span className="material-symbols-outlined text-[18px]">
-                  how_to_vote
-                </span>
+                <Vote size={18} />
               </div>
               <span className="text-xs uppercase tracking-wider text-sub">
-                BOYS WONDER • CONDUCT PROTOCOL
+                {settings.site_name} • {settings.site_tagline}
               </span>
               <span className="rounded bg-mint/10 px-2 py-0.5 text-xs font-semibold text-mint">
                 LIVE ACTIVE
               </span>
             </div>
             <h1 className="font-display text-3xl font-bold tracking-tight">
-              โหวตความประพฤติ
+              {settings.vote_title}
             </h1>
             <p className="max-w-2xl text-sm text-sub">
-              ใครก็กดได้ กดได้เรื่อยๆ ไม่จำกัด •{" "}
+              {settings.vote_subtitle} •{" "}
               <span className="font-semibold text-mint">+1 ถ้าทำดี</span> /{" "}
               <span className="font-semibold text-softred">-1 ถ้าเกรียน</span> •{" "}
               <span className="text-ink underline decoration-white/20 underline-offset-4">
@@ -185,9 +229,7 @@ export default function VotePage() {
                 <span className="font-display text-xl font-bold tracking-tight text-softred">
                   {loading ? "…" : (lowest?.name ?? "–")}
                 </span>
-                <span className="material-symbols-outlined text-[18px] text-softred">
-                  local_fire_department
-                </span>
+                <Flame size={18} className="text-softred" />
               </div>
             </div>
           </div>
@@ -197,13 +239,14 @@ export default function VotePage() {
       {/* Toolbar */}
       <section className="mb-5 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <div className="relative max-w-md flex-1">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-faint">
-            search
-          </span>
+          <Search
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-faint"
+          />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="ค้นหาเพื่อนในแก๊ง Boys Wonder..."
+            placeholder={`ค้นหาเพื่อนในแก๊ง ${settings.site_name}...`}
             className="w-full rounded-lg bg-lowest py-2 pl-10 pr-4 text-sm text-ink placeholder-faint transition-all focus:bg-panel focus:outline-none"
           />
         </div>
@@ -211,7 +254,7 @@ export default function VotePage() {
           <span className="mr-1 shrink-0 text-xs uppercase text-faint">
             เรียงตาม:
           </span>
-          {chip("all", `ทั้งหมด (${scores.length})`)}
+          {chip("all", `ทั้งหมด (${members.length})`)}
           {chip("neg", "คะแนนติดลบ")}
           {chip("pos", "แต้มบวกมากสุด")}
         </div>
@@ -247,18 +290,7 @@ export default function VotePage() {
                   )}
                   <div className="mb-4 flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-highest">
-                        <span className="font-display text-lg font-bold">
-                          {AVATAR[s.name] ?? s.name.charAt(0)}
-                        </span>
-                        {s.score < 0 && (
-                          <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-softred">
-                            <span className="material-symbols-outlined text-[10px] text-lowest">
-                              priority_high
-                            </span>
-                          </span>
-                        )}
-                      </div>
+                      <Avatar m={s} />
                       <div className="flex min-w-0 flex-col">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="truncate font-display font-bold">
@@ -271,7 +303,7 @@ export default function VotePage() {
                           </span>
                         </div>
                         <span className="text-xs text-sub">
-                          {SUBTITLE[s.name] ?? ""}
+                          {s.subtitle}
                         </span>
                       </div>
                     </div>
@@ -292,9 +324,7 @@ export default function VotePage() {
                       onClick={() => vote(s.name, -1)}
                       className="flex items-center justify-center gap-1 rounded-lg bg-softred/10 px-2 py-2.5 font-semibold text-softred shadow-sm transition-all hover:bg-softred hover:text-black active:scale-95 disabled:opacity-40"
                     >
-                      <span className="material-symbols-outlined text-[20px]">
-                        thumb_down
-                      </span>
+                      <ThumbsDown size={20} />
                       -1 เกรียน
                     </button>
                     <button
@@ -302,9 +332,7 @@ export default function VotePage() {
                       onClick={() => vote(s.name, 1)}
                       className="flex items-center justify-center gap-1 rounded-lg bg-highest px-2 py-2.5 font-semibold text-ink shadow-sm transition-all hover:bg-mint hover:text-black active:scale-95 disabled:opacity-40"
                     >
-                      <span className="material-symbols-outlined text-[20px]">
-                        thumb_up
-                      </span>
+                      <ThumbsUp size={20} />
                       +1 ทำดี
                     </button>
                   </div>
@@ -340,11 +368,17 @@ export default function VotePage() {
                       className="flex items-center justify-between rounded-lg bg-lowest p-2"
                     >
                       <div className="flex min-w-0 items-center gap-2">
-                        <span
-                          className={`material-symbols-outlined text-[16px] ${pos ? "text-mint" : "text-softred"}`}
-                        >
-                          {pos ? "verified" : "warning"}
-                        </span>
+                        {pos ? (
+                          <BadgeCheck
+                            size={16}
+                            className="shrink-0 text-mint"
+                          />
+                        ) : (
+                          <TriangleAlert
+                            size={16}
+                            className="shrink-0 text-softred"
+                          />
+                        )}
                         <span className="truncate text-sm font-medium">
                           {f.name}
                         </span>
@@ -376,9 +410,7 @@ export default function VotePage() {
                   จากฟีดล่าสุด {sum} โหวต
                 </span>
               </div>
-              <span className="material-symbols-outlined text-faint">
-                insights
-              </span>
+              <ChartColumn size={20} className="text-faint" />
             </div>
             <div className="flex flex-col gap-2 rounded-lg bg-lowest p-4">
               <div className="flex items-center justify-between text-xs font-bold uppercase">
@@ -409,18 +441,13 @@ export default function VotePage() {
             </div>
             <div className="flex flex-col gap-2 rounded-lg bg-high/40 p-3 text-sm text-sub">
               <div className="flex items-center gap-2 font-bold text-ink">
-                <span className="material-symbols-outlined text-[16px]">
-                  gavel
-                </span>
+                <Gavel size={16} />
                 <span className="text-xs uppercase">
                   กฎการลงทัณฑ์ประจำสัปดาห์
                 </span>
               </div>
               <p className="leading-relaxed">
-                ผู้ที่ได้แต้มต่ำกว่า{" "}
-                <span className="font-bold text-softred">-10</span>{" "}
-                ในวันอาทิตย์ จะต้องเลี้ยงชานมไข่มุก หรือเป็นคนเปิดตี้เกมรอบดึกตามมติสภา
-                Boys Wonder!
+                {settings.rule_text}
               </p>
             </div>
           </div>
@@ -428,7 +455,7 @@ export default function VotePage() {
       </div>
 
       <footer className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-white/10 py-4 text-xs text-sub md:flex-row">
-        <div>BOYS WONDER REPUTATION PROTOCOL • CONDUCT MATRIX ENGINE</div>
+        <div>{settings.site_name} REPUTATION PROTOCOL • CONDUCT MATRIX ENGINE</div>
         <div className="flex items-center gap-3">
           <span>STATUS: SYNCHRONIZED</span>
           <span className="text-faint">|</span>

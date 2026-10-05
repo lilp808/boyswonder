@@ -1,5 +1,12 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { MEMBERS, isMember, type ScoreEntry } from "./members";
+import {
+  DEFAULT_SETTINGS,
+  MEMBERS,
+  SUBTITLE,
+  type MemberProfile,
+  type ScoreEntry,
+  type SiteSettings,
+} from "./members";
 
 export type FeedEntry = {
   t: string;
@@ -27,17 +34,40 @@ export function isSheetsConfigured() {
   );
 }
 
-function normalize(rows: { name: string; score: number | null }[]): ScoreEntry[] {
+// ---------- admin auth ----------
+export function requireAdmin(password: string) {
+  const expected = process.env.ADMIN_PASSWORD;
+  if (!expected) {
+    throw new Error("ยังไม่ได้ตั้งค่า ADMIN_PASSWORD บน server");
+  }
+  if (!password || password !== expected) {
+    throw new Error("รหัสผ่านไม่ถูกต้อง");
+  }
+}
+
+// ---------- scores (เดิม) ----------
+function normalize(
+  rows: { name: string; score: number | null }[],
+  order: readonly string[] = MEMBERS
+): ScoreEntry[] {
   const map = new Map<string, number>();
   for (const r of rows) {
     if (r && typeof r.name === "string") map.set(r.name, r.score ?? 0);
   }
-  return MEMBERS.map((name) => ({ name, score: map.get(name) ?? 0 }));
+  return order.map((name) => ({ name, score: map.get(name) ?? 0 }));
 }
 
 export async function getScores(): Promise<ScoreEntry[]> {
   const { data, error } = await db().from("scores").select("name,score");
   if (error) throw new Error("อ่านคะแนนจาก Supabase ไม่ได้: " + error.message);
+  // ถ้ามีตาราง members แล้ว ให้เรียงตามนั้น
+  try {
+    const members = await getMembersRaw();
+    const order = members.map((m) => m.name);
+    if (order.length > 0) return normalize(data ?? [], order);
+  } catch {
+    // ตาราง members อาจยังไม่มี — fallback เดิม
+  }
   return normalize(data ?? []);
 }
 
@@ -45,13 +75,26 @@ export async function voteAndGetScores(
   name: string,
   delta: 1 | -1
 ): Promise<ScoreEntry[]> {
-  if (!isMember(name)) throw new Error("ชื่อไม่ถูกต้อง");
-  const { data, error } = await db().rpc("vote_member", {
-    p_name: name,
+  const clean = name.trim();
+  if (!clean) throw new Error("ชื่อไม่ถูกต้อง");
+  // ตรวจสมาชิกใน DB (ถ้ามีตาราง) — ต้อง active ถึงโหวตได้
+  try {
+    const members = await getMembersRaw();
+    if (members.length > 0) {
+      const found = members.find((m) => m.name === clean);
+      if (!found) throw new Error("ไม่มีชื่อนี้ในสมาชิก");
+      if (!found.is_active) throw new Error("สมาชิกคนนี้ถูกปิดใช้งานแล้ว");
+    }
+  } catch (e) {
+    if (e instanceof Error && /ไม่มีชื่อนี้|ปิดใช้งาน/.test(e.message)) throw e;
+    // ถ้าตารางยังไม่มี ให้ผ่านไปใช้ vote ตรงๆ
+  }
+  const { error } = await db().rpc("vote_member", {
+    p_name: clean,
     p_delta: delta,
   });
   if (error) throw new Error("บันทึกโหวตลง Supabase ไม่ได้: " + error.message);
-  return normalize((data ?? []) as { name: string; score: number | null }[]);
+  return getScores();
 }
 
 export async function getFeed(limit = 15): Promise<{
@@ -76,4 +119,161 @@ export async function getFeed(limit = 15): Promise<{
     })),
     total: count ?? 0,
   };
+}
+
+// ---------- members ----------
+export type MemberRow = {
+  name: string;
+  subtitle: string;
+  avatar_url: string;
+  sort_order: number;
+  is_active: boolean;
+};
+
+export async function getMembersRaw(): Promise<MemberRow[]> {
+  const { data, error } = await db()
+    .from("members")
+    .select("name,subtitle,avatar_url,sort_order,is_active")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    name: r.name as string,
+    subtitle: (r.subtitle as string) ?? "",
+    avatar_url: (r.avatar_url as string) ?? "",
+    sort_order: (r.sort_order as number) ?? 0,
+    is_active: (r.is_active as boolean) ?? true,
+  }));
+}
+
+export async function getMembersWithScores(): Promise<MemberProfile[]> {
+  let rows: MemberRow[];
+  try {
+    rows = await getMembersRaw();
+  } catch {
+    // ตาราง members ยังไม่มี — fallback จาก scores + ค่าคงที่เดิม
+    const scores = await getScores();
+    return scores.map((s, i) => ({
+      name: s.name,
+      subtitle: SUBTITLE[s.name] ?? "",
+      avatar_url: "",
+      sort_order: i,
+      is_active: true,
+      score: s.score,
+    }));
+  }
+  if (rows.length === 0) {
+    const scores = await getScores();
+    return scores.map((s, i) => ({
+      name: s.name,
+      subtitle: SUBTITLE[s.name] ?? "",
+      avatar_url: "",
+      sort_order: i,
+      is_active: true,
+      score: s.score,
+    }));
+  }
+  const { data, error } = await db().from("scores").select("name,score");
+  if (error) throw new Error("อ่านคะแนนจาก Supabase ไม่ได้: " + error.message);
+  const map = new Map<string, number>();
+  for (const r of data ?? []) map.set(r.name, r.score ?? 0);
+  return rows.map((m) => ({ ...m, score: map.get(m.name) ?? 0 }));
+}
+
+export async function addMember(input: {
+  name: string;
+  subtitle?: string;
+  avatar_url?: string;
+}): Promise<void> {
+  const name = input.name.trim();
+  if (!name) throw new Error("ชื่อห้ามว่าง");
+  const c = db();
+  const { error: mErr } = await c.from("members").insert({
+    name,
+    subtitle: (input.subtitle ?? "").trim(),
+    avatar_url: (input.avatar_url ?? "").trim(),
+    sort_order: 999,
+    is_active: true,
+  });
+  if (mErr) throw new Error("เพิ่มสมาชิกไม่ได้: " + mErr.message);
+  const { error: sErr } = await c
+    .from("scores")
+    .upsert({ name, score: 0 }, { onConflict: "name" });
+  if (sErr) throw new Error("สร้างคะแนนตั้งต้นไม่ได้: " + sErr.message);
+}
+
+export async function updateMember(
+  oldName: string,
+  patch: {
+    name?: string;
+    subtitle?: string;
+    avatar_url?: string;
+    sort_order?: number;
+    is_active?: boolean;
+  }
+): Promise<void> {
+  const c = db();
+  const newName = (patch.name ?? oldName).trim();
+  if (!newName) throw new Error("ชื่อห้ามว่าง");
+  if (newName !== oldName) {
+    const { error } = await c.rpc("rename_member", {
+      p_old: oldName,
+      p_new: newName,
+    });
+    if (error) throw new Error("เปลี่ยนชื่อไม่ได้: " + error.message);
+  }
+  const update: Record<string, unknown> = {};
+  if (patch.subtitle !== undefined) update.subtitle = patch.subtitle.trim();
+  if (patch.avatar_url !== undefined) update.avatar_url = patch.avatar_url.trim();
+  if (patch.sort_order !== undefined) update.sort_order = patch.sort_order;
+  if (patch.is_active !== undefined) update.is_active = patch.is_active;
+  if (Object.keys(update).length === 0) return;
+  const { error } = await c.from("members").update(update).eq("name", newName);
+  if (error) throw new Error("อัปเดตสมาชิกไม่ได้: " + error.message);
+}
+
+export async function deleteMember(name: string, hard = false): Promise<void> {
+  const c = db();
+  if (hard) {
+    const { error: mErr } = await c.from("members").delete().eq("name", name);
+    if (mErr) throw new Error("ลบสมาชิกไม่ได้: " + mErr.message);
+    const { error: sErr } = await c.from("scores").delete().eq("name", name);
+    if (sErr) throw new Error("ลบคะแนนไม่ได้: " + sErr.message);
+  } else {
+    const { error } = await c
+      .from("members")
+      .update({ is_active: false })
+      .eq("name", name);
+    if (error) throw new Error("ปิดใช้งานสมาชิกไม่ได้: " + error.message);
+  }
+}
+
+// ---------- site settings ----------
+export async function getSettings(): Promise<SiteSettings> {
+  try {
+    const { data, error } = await db().from("site_settings").select("key,value");
+    if (error) throw error;
+    const map = new Map((data ?? []).map((r) => [r.key as string, r.value as string]));
+    return {
+      site_name: map.get("site_name") ?? DEFAULT_SETTINGS.site_name,
+      site_tagline: map.get("site_tagline") ?? DEFAULT_SETTINGS.site_tagline,
+      vote_title: map.get("vote_title") ?? DEFAULT_SETTINGS.vote_title,
+      vote_subtitle: map.get("vote_subtitle") ?? DEFAULT_SETTINGS.vote_subtitle,
+      rule_threshold: map.get("rule_threshold") ?? DEFAULT_SETTINGS.rule_threshold,
+      rule_text: map.get("rule_text") ?? DEFAULT_SETTINGS.rule_text,
+    };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+export async function saveSettings(input: Partial<SiteSettings>): Promise<SiteSettings> {
+  const c = db();
+  const rows = Object.entries(input)
+    .filter(([, v]) => v !== undefined)
+    .map(([key, value]) => ({ key, value: String(value), updated_at: new Date().toISOString() }));
+  if (rows.length === 0) return getSettings();
+  const { error } = await c.from("site_settings").upsert(rows, { onConflict: "key" });
+  if (error) throw new Error("บันทึกตั้งค่าไม่ได้: " + error.message);
+  return getSettings();
 }

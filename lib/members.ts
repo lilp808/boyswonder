@@ -15,11 +15,40 @@ export type ScoreEntry = {
   score: number;
 };
 
+// โปรไฟล์สมาชิกแบบเต็ม (ตัวจริงอยู่ในตาราง members บน Supabase)
+export type MemberProfile = {
+  name: string;
+  subtitle: string;
+  avatar_url: string;
+  sort_order: number;
+  is_active: boolean;
+  score: number;
+};
+
+export type SiteSettings = {
+  site_name: string;
+  site_tagline: string;
+  vote_title: string;
+  vote_subtitle: string;
+  rule_threshold: string;
+  rule_text: string;
+};
+
+export const DEFAULT_SETTINGS: SiteSettings = {
+  site_name: "BOYS WONDER",
+  site_tagline: "CONDUCT PROTOCOL",
+  vote_title: "โหวตความประพฤติ",
+  vote_subtitle: "ใครก็กดได้ กดได้เรื่อยๆ ไม่จำกัด",
+  rule_threshold: "-10",
+  rule_text:
+    "ผู้ที่ได้แต้มต่ำกว่า -10 ในวันอาทิตย์ จะต้องเลี้ยงชานมไข่มุก หรือเป็นคนเปิดตี้เกมรอบดึกตามมติสภา Boys Wonder!",
+};
+
 export function isMember(name: string): name is MemberName {
   return (MEMBERS as readonly string[]).includes(name);
 }
 
-// อักษรย่ออวตาร + ฉายาประจำตัว (ไว้โชว์ในการ์ด)
+// อักษรย่ออวตาร + ฉายาประจำตัว (fallback ตอน demo — ตัวจริงอยู่ใน Supabase)
 export const AVATAR: Record<string, string> = {
   "พี่แม้ก": "ม",
   "น้องซี": "ซ",
@@ -39,3 +68,7 @@ export const SUBTITLE: Record<string, string> = {
   "ปอแซก": "ตัวฮาประจำวอยซ์",
   "พี่บาม": "โปรเพลเยอร์ประจำทีม",
 };
+
+export function avatarInitial(name: string): string {
+  return AVATAR[name] ?? name.charAt(0);
+}

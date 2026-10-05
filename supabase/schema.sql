@@ -56,3 +56,81 @@ insert into scores (name, score) values
   ('ปอแซก', 0),
   ('พี่บาม', 0)
 on conflict (name) do nothing;
+
+-- 6) ตารางสมาชิก: ชื่อ / ฉายา / รูปโปร (แก้ผ่านหน้า /edit)
+create table if not exists members (
+  name text primary key,
+  subtitle text not null default '',
+  avatar_url text not null default '',
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+alter table members enable row level security;
+-- (ไม่สร้าง policy = anon อ่านไม่ได้ ให้ server ใช้ service_role เท่านั้น)
+
+insert into members (name, subtitle, avatar_url, sort_order) values
+  ('พี่แม้ก', 'จอมหัวร้อนประจำตึก', '', 0),
+  ('น้องซี', 'สายซัพพอร์ต', '', 1),
+  ('น้องไอซ์', 'แนวหน้าสายสับ', '', 2),
+  ('น้องเข้ม', 'เงียบแต่เฉียบคม', '', 3),
+  ('จารมอส', 'ปรมาจารย์แผนที่', '', 4),
+  ('ปอแซก', 'ตัวฮาประจำวอยซ์', '', 5),
+  ('พี่บาม', 'โปรเพลเยอร์ประจำทีม', '', 6)
+on conflict (name) do nothing;
+
+-- 7) ตั้งค่าข้อความเว็บ (แก้ผ่านหน้า /edit)
+create table if not exists site_settings (
+  key text primary key,
+  value text not null default '',
+  updated_at timestamptz not null default now()
+);
+alter table site_settings enable row level security;
+
+insert into site_settings (key, value) values
+  ('site_name', 'BOYS WONDER'),
+  ('site_tagline', 'CONDUCT PROTOCOL'),
+  ('vote_title', 'โหวตความประพฤติ'),
+  ('vote_subtitle', 'ใครก็กดได้ กดได้เรื่อยๆ ไม่จำกัด'),
+  ('rule_threshold', '-10'),
+  ('rule_text', 'ผู้ที่ได้แต้มต่ำกว่า -10 ในวันอาทิตย์ จะต้องเลี้ยงชานมไข่มุก หรือเป็นคนเปิดตี้เกมรอบดึกตามมติสภา Boys Wonder!')
+on conflict (key) do nothing;
+
+-- 8) ฟังก์ชันเปลี่ยนชื่อสมาชิกแบบ atomic (อัปเดต members + scores + votes_log พร้อมกัน)
+create or replace function rename_member(p_old text, p_new text)
+returns void
+language plpgsql
+as $$
+begin
+  if p_old is null or p_new is null or btrim(p_old) = '' or btrim(p_new) = '' then
+    raise exception 'ชื่อห้ามว่าง';
+  end if;
+  if p_old = p_new then
+    return;
+  end if;
+  if exists (select 1 from members where name = p_new) then
+    raise exception 'มีชื่อนี้อยู่แล้ว';
+  end if;
+  update members set name = p_new where name = p_old;
+  update scores set name = p_new, updated_at = now() where name = p_old;
+  update votes_log set name = p_new where name = p_old;
+end;
+$$;
+
+-- 9) Storage bucket สำหรับรูปโปรไฟล์ (public read, เขียนผ่าน service_role เท่านั้น)
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do update set public = true;
+
+-- policy อ่านรูปได้ทุกคน (idempotent)
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'avatars public read'
+  ) then
+    create policy "avatars public read"
+      on storage.objects for select
+      using (bucket_id = 'avatars');
+  end if;
+end
+$$;

@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Trophy, Vote } from "lucide-react";
+import { DEFAULT_SETTINGS } from "@/lib/members";
+import { getSettings, isSheetsConfigured } from "@/lib/sheets";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -7,11 +10,22 @@ export const metadata: Metadata = {
   description: "Leaderboard + โหวตความประพฤติแก๊ง Boys Wonder",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let siteName = DEFAULT_SETTINGS.site_name;
+  let tagline = DEFAULT_SETTINGS.site_tagline;
+  if (isSheetsConfigured()) {
+    try {
+      const s = await getSettings();
+      siteName = s.site_name;
+      tagline = s.site_tagline;
+    } catch {
+      // fallback ค่า default
+    }
+  }
   return (
     <html lang="th" className="dark">
       <body className="min-h-screen bg-base text-ink antialiased">
@@ -22,27 +36,27 @@ export default function RootLayout({
               className="flex items-center gap-2 font-display text-lg font-bold tracking-tight"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-high">
-                <span className="material-symbols-outlined text-[20px]">
-                  how_to_vote
-                </span>
+                <Vote size={20} />
               </span>
-              BOYS WONDER
+              {siteName}
               <span className="hidden text-xs font-medium text-faint sm:inline">
-                CONDUCT PROTOCOL
+                {tagline}
               </span>
             </Link>
             <div className="flex gap-2">
               <Link
                 href="/"
-                className="rounded-lg bg-high px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-highest"
+                className="flex items-center gap-1.5 rounded-lg bg-high px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-highest"
               >
-                🏆 Leaderboard
+                <Trophy size={16} />
+                Leaderboard
               </Link>
               <Link
                 href="/vote"
-                className="rounded-lg bg-mint px-4 py-2 text-sm font-bold text-black transition-colors hover:brightness-110"
+                className="flex items-center gap-1.5 rounded-lg bg-mint px-4 py-2 text-sm font-bold text-black transition-colors hover:brightness-110"
               >
-                🗳️ โหวต
+                <Vote size={16} />
+                โหวต
               </Link>
             </div>
           </nav>
