@@ -54,7 +54,14 @@ export default async function RootLayout({
                 src="/bwd.jpg"
                 alt={siteName}
                 title={`${siteName} • ${tagline}`}
-                className="h-9 w-auto rounded-lg object-cover"
+                className="h-9 w-auto rounded-lg object-cover sm:hidden"
+              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/boyswonder-long.png"
+                alt={siteName}
+                title={`${siteName} • ${tagline}`}
+                className="hidden h-9 w-auto rounded-lg object-cover sm:block"
               />
             </Link>
             <div className="flex gap-2">
