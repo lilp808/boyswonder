@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { AVATAR } from "@/lib/members";
 
 type ScoreEntry = { name: string; score: number };
 
@@ -17,7 +18,7 @@ export default function LeaderboardPage() {
     try {
       const res = await fetch("/api/scores", { cache: "no-store" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "โหลดไม่สำเร็จ");
+      if (!res.ok) throw new Error(data.details ?? data.error ?? "โหลดไม่สำเร็จ");
       const sorted = [...(data.scores as ScoreEntry[])].sort(
         (a, b) => b.score - a.score
       );
@@ -32,7 +33,7 @@ export default function LeaderboardPage() {
   }, []);
 
   useEffect(() => {
-    // โหลดครั้งแรก + poll ทุก 5 วิ — เป็นการซิงค์กับ external system (API) จึงต้อง setState ใน effect
+    // โหลดครั้งแรก + poll ทุก 5 วิ
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchScores();
     const t = setInterval(fetchScores, 5000);
@@ -45,56 +46,69 @@ export default function LeaderboardPage() {
     <main className="mx-auto w-full max-w-3xl px-4 py-8">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">
+          <div className="mb-1 flex items-center gap-2">
+            <span className="text-[11px] uppercase tracking-wider text-sub">
+              BOYS WONDER • CONDUCT PROTOCOL
+            </span>
+            <span className="rounded bg-mint/10 px-2 py-0.5 text-[11px] font-semibold text-mint">
+              LIVE
+            </span>
+          </div>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
             🏆 Leaderboard
           </h1>
-          <p className="mt-1 text-sm text-zinc-400">
+          <p className="mt-1 text-sm text-sub">
             อัปเดตอัตโนมัติทุก 5 วินาที • ติดลบได้
           </p>
         </div>
         <Link
           href="/vote"
-          className="shrink-0 rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-black hover:bg-amber-300"
+          className="shrink-0 rounded-lg bg-mint px-5 py-2.5 text-sm font-bold text-black transition-all hover:brightness-110"
         >
           ไปโหวต →
         </Link>
       </div>
 
       {demo && (
-        <div className="mt-4 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
-          โหมด demo — ยังไม่ได้ต่อ Google Sheet ตั้งค่า Env บน Vercel แล้วจะเห็นคะแนนจริง
+        <div className="mt-4 rounded-xl border border-mint/40 bg-mint/10 px-4 py-3 text-sm text-mint">
+          โหมด demo — ยังไม่ได้ต่อ Apps Script ตั้งค่า Env แล้วจะเห็นคะแนนจริง
         </div>
       )}
       {error && (
-        <div className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <div className="mt-4 rounded-xl border border-softred/40 bg-softred/10 px-4 py-3 text-sm text-softred">
           {error}
         </div>
       )}
 
       {loading ? (
-        <p className="mt-8 text-center text-zinc-400">กำลังโหลด…</p>
+        <p className="mt-8 text-center text-sm text-faint">กำลังโหลด…</p>
       ) : (
         <ol className="mt-6 space-y-3">
           {scores.map((s, i) => {
-            const pct = top > 0 ? Math.max(4, (s.score / top) * 100) : s.score < 0 ? 4 : 4;
+            const pct =
+              top > 0 ? Math.max(4, (s.score / top) * 100) : 4;
+            const neg = s.score < 0;
             return (
               <li
                 key={s.name}
-                className={`flex items-center gap-4 rounded-2xl border p-4 ${
+                className={`flex items-center gap-4 rounded-xl border p-4 transition-colors ${
                   i === 0
-                    ? "border-amber-400/60 bg-amber-400/10"
-                    : "border-white/10 bg-white/5"
+                    ? "border-mint/50 bg-mint/5"
+                    : "border-white/10 bg-low hover:bg-panel"
                 }`}
               >
-                <span className="w-10 text-center text-2xl">
+                <span className="w-10 shrink-0 text-center text-2xl">
                   {MEDALS[i] ?? `${i + 1}.`}
+                </span>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-highest font-display text-lg font-bold">
+                  {AVATAR[s.name] ?? s.name.charAt(0)}
                 </span>
                 <div className="flex-1">
                   <div className="flex items-baseline justify-between">
-                    <span className="font-bold">{s.name}</span>
+                    <span className="font-display font-bold">{s.name}</span>
                     <span
-                      className={`font-mono text-xl font-extrabold ${
-                        s.score < 0 ? "text-red-400" : "text-emerald-300"
+                      className={`font-mono text-xl font-semibold ${
+                        neg ? "text-softred" : "text-mint"
                       }`}
                     >
                       {s.score}
@@ -103,7 +117,7 @@ export default function LeaderboardPage() {
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
                     <div
                       className={`h-full rounded-full ${
-                        s.score < 0 ? "bg-red-500" : "bg-emerald-400"
+                        neg ? "bg-softred" : "bg-mint"
                       }`}
                       style={{ width: `${pct}%` }}
                     />
@@ -114,6 +128,11 @@ export default function LeaderboardPage() {
           })}
         </ol>
       )}
+
+      <footer className="mt-8 border-t border-white/10 py-4 text-center text-xs text-faint">
+        BOYS WONDER REPUTATION PROTOCOL • กด +1 / -1 ได้ไม่จำกัด • ติดลบได้ •
+        ไม่มีรีเซ็ต
+      </footer>
     </main>
   );
 }

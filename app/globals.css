@@ -1,26 +1,46 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500;600&family=Noto+Sans+Thai:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap");
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-base: #131313;
+  --color-lowest: #0e0e0e;
+  --color-low: #1c1b1b;
+  --color-panel: #201f1f;
+  --color-high: #2a2a2a;
+  --color-highest: #353534;
+  --color-mint: #4edea3;
+  --color-softred: #ffb4ab;
+  --color-ink: #e5e2e1;
+  --color-sub: #c4c7c8;
+  --color-faint: #8e9192;
+
+  --font-sans: "Plus Jakarta Sans", "Noto Sans Thai", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Noto Sans Thai", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #131313;
+  color: #e5e2e1;
+  font-family: var(--font-sans);
+  overscroll-behavior: none;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+  user-select: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
 }

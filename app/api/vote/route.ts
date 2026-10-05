@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
   if (!isSheetsConfigured()) {
     return NextResponse.json(
-      { error: "ยังไม่ได้ตั้งค่า Google Sheet บน server" },
+      { error: "ยังไม่ได้ตั้งค่า Supabase บน server" },
       { status: 503 }
     );
   }
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     console.error(e);
     const details = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: "บันทึกโหวตลง Google Sheet ไม่ได้", details },
+      { error: "บันทึกโหวตไม่ได้", details },
       { status: 500 }
     );
   }

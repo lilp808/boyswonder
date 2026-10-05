@@ -1,22 +1,67 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AVATAR, SUBTITLE } from "@/lib/members";
 
 type ScoreEntry = { name: string; score: number };
+type FeedEntry = { t: string; name: string; delta: number };
+
+type SortMode = "all" | "neg" | "pos";
+
+function relativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "เมื่อสักครู่";
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return "เมื่อสักครู่";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} นาทีที่แล้ว`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} ชม.ที่แล้ว`;
+  return `${Math.floor(h / 24)} วันที่แล้ว`;
+}
+
+function badgeOf(score: number): { text: string; cls: string } {
+  if (score < 0)
+    return { text: `ติดลบ (${score})`, cls: "bg-softred/10 text-softred" };
+  if (score > 0)
+    return { text: `ทำดี (${score})`, cls: "bg-mint/10 text-mint" };
+  return { text: "สถานะปกติ", cls: "bg-high text-sub" };
+}
+
+function scoreColor(score: number): string {
+  if (score < 0) return "text-softred";
+  if (score > 0) return "text-mint";
+  return "text-ink";
+}
 
 export default function VotePage() {
   const [scores, setScores] = useState<ScoreEntry[]>([]);
+  const [feed, setFeed] = useState<FeedEntry[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortMode>("all");
+  const [latency, setLatency] = useState<number | null>(null);
 
-  const fetchScores = useCallback(async () => {
+  const refresh = useCallback(async () => {
+    const t0 = performance.now();
     try {
-      const res = await fetch("/api/scores", { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "โหลดไม่สำเร็จ");
-      setScores(data.scores);
+      const [sRes, fRes] = await Promise.all([
+        fetch("/api/scores", { cache: "no-store" }),
+        fetch("/api/feed", { cache: "no-store" }),
+      ]);
+      const sData = await sRes.json();
+      const fData = await fRes.json();
+      if (!sRes.ok) throw new Error(sData.details ?? sData.error ?? "โหลดไม่สำเร็จ");
+      setScores(sData.scores);
+      if (fRes.ok) {
+        setFeed(fData.feed ?? []);
+        setTotal(fData.total ?? 0);
+      }
       setError("");
+      setLatency(Math.round(performance.now() - t0));
     } catch (e) {
       setError(e instanceof Error ? e.message : "โหลดไม่สำเร็จ");
     } finally {
@@ -25,17 +70,21 @@ export default function VotePage() {
   }, []);
 
   useEffect(() => {
-    // โหลดคะแนนครั้งแรกจาก external API
+    // ซิงค์คะแนน + ฟีดกับ server
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchScores();
-  }, [fetchScores]);
+    refresh();
+    const t = setInterval(refresh, 6000);
+    return () => clearInterval(t);
+  }, [refresh]);
 
   async function vote(name: string, delta: 1 | -1) {
     if (busy) return;
-    setBusy(`${name}:${delta}`);
-    // optimistic update
+    setBusy(true);
     setScores((prev) =>
       prev.map((s) => (s.name === name ? { ...s, score: s.score + delta } : s))
+    );
+    setFeed((prev) =>
+      [{ t: new Date().toISOString(), name, delta }, ...prev].slice(0, 15)
     );
     try {
       const res = await fetch("/api/vote", {
@@ -44,69 +93,348 @@ export default function VotePage() {
         body: JSON.stringify({ name, delta }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "โหวตไม่สำเร็จ");
+      if (!res.ok) throw new Error(data.details ?? data.error ?? "โหวตไม่สำเร็จ");
       setScores(data.scores);
+      refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "โหวตไม่สำเร็จ");
-      fetchScores(); // rollback ด้วยค่าจริง
+      refresh();
     } finally {
-      // กันกดเบิ้ล 0.8 วิ (ลด race บน Sheet)
-      setTimeout(() => setBusy(null), 800);
+      setTimeout(() => setBusy(false), 800);
     }
   }
 
+  const visible = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    let list = scores.filter((s) => s.name.toLowerCase().includes(q));
+    if (sort === "neg") list = [...list].sort((a, b) => a.score - b.score);
+    else if (sort === "pos") list = [...list].sort((a, b) => b.score - a.score);
+    return list;
+  }, [scores, query, sort]);
+
+  const lowest = useMemo(() => {
+    if (scores.length === 0) return null;
+    return [...scores].sort((a, b) => a.score - b.score)[0];
+  }, [scores]);
+
+  const plus = feed.filter((f) => f.delta > 0).length;
+  const minus = feed.filter((f) => f.delta < 0).length;
+  const sum = plus + minus;
+  const plusPct = sum === 0 ? 50 : Math.round((plus / sum) * 100);
+
+  const chip = (mode: SortMode, label: string) => (
+    <button
+      key={mode}
+      onClick={() => setSort(mode)}
+      className={`shrink-0 rounded-lg px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+        sort === mode
+          ? "bg-high text-ink"
+          : "bg-low text-sub hover:text-ink"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8">
-      <h1 className="text-3xl font-extrabold tracking-tight">🗳️ โหวตความประพฤติ</h1>
-      <p className="mt-1 text-sm text-zinc-400">
-        ใครก็กดได้ กดได้เรื่อยๆ ไม่จำกัด • +1 ถ้าทำดี / -1 ถ้าเกรียน • ติดลบได้
-      </p>
+    <main className="mx-auto w-full max-w-[1440px] px-4 py-6">
+      {/* Hero */}
+      <section className="mb-6">
+        <div className="relative flex flex-col justify-between gap-6 overflow-hidden rounded-xl bg-lowest p-6 shadow-md lg:flex-row lg:items-center">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-high/40 blur-3xl" />
+          <div className="relative z-10 flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded bg-high text-ink">
+                <span className="material-symbols-outlined text-[18px]">
+                  how_to_vote
+                </span>
+              </div>
+              <span className="text-xs uppercase tracking-wider text-sub">
+                BOYS WONDER • CONDUCT PROTOCOL
+              </span>
+              <span className="rounded bg-mint/10 px-2 py-0.5 text-xs font-semibold text-mint">
+                LIVE ACTIVE
+              </span>
+            </div>
+            <h1 className="font-display text-3xl font-bold tracking-tight">
+              โหวตความประพฤติ
+            </h1>
+            <p className="max-w-2xl text-sm text-sub">
+              ใครก็กดได้ กดได้เรื่อยๆ ไม่จำกัด •{" "}
+              <span className="font-semibold text-mint">+1 ถ้าทำดี</span> /{" "}
+              <span className="font-semibold text-softred">-1 ถ้าเกรียน</span> •{" "}
+              <span className="text-ink underline decoration-white/20 underline-offset-4">
+                ติดลบได้ไร้ขีดจำกัด
+              </span>
+            </p>
+          </div>
+          <div className="relative z-10 flex shrink-0 items-center gap-3">
+            <div className="flex flex-col rounded-lg bg-panel px-4 py-2">
+              <span className="text-[11px] uppercase text-faint">
+                ยอดโหวตรวม
+              </span>
+              <span className="font-display text-xl font-bold tracking-tight">
+                {loading ? "…" : total.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex flex-col rounded-lg bg-panel px-4 py-2">
+              <span className="text-[11px] uppercase text-faint">
+                เกรียนสุด ({lowest?.score ?? "–"})
+              </span>
+              <div className="flex items-center gap-1">
+                <span className="font-display text-xl font-bold tracking-tight text-softred">
+                  {loading ? "…" : (lowest?.name ?? "–")}
+                </span>
+                <span className="material-symbols-outlined text-[18px] text-softred">
+                  local_fire_department
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Toolbar */}
+      <section className="mb-5 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="relative max-w-md flex-1">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-faint">
+            search
+          </span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ค้นหาเพื่อนในแก๊ง Boys Wonder..."
+            className="w-full rounded-lg bg-lowest py-2 pl-10 pr-4 text-sm text-ink placeholder-faint transition-all focus:bg-panel focus:outline-none"
+          />
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+          <span className="mr-1 shrink-0 text-xs uppercase text-faint">
+            เรียงตาม:
+          </span>
+          {chip("all", `ทั้งหมด (${scores.length})`)}
+          {chip("neg", "คะแนนติดลบ")}
+          {chip("pos", "แต้มบวกมากสุด")}
+        </div>
+      </section>
 
       {error && (
-        <div className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <div className="mb-5 rounded-xl border border-softred/40 bg-softred/10 px-4 py-3 text-sm text-softred">
           {error}
         </div>
       )}
 
-      {loading ? (
-        <p className="mt-8 text-center text-zinc-400">กำลังโหลด…</p>
-      ) : (
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {scores.map((s) => (
-            <div
-              key={s.name}
-              className="rounded-2xl border border-white/10 bg-white/5 p-4"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold">{s.name}</span>
-                <span
-                  className={`font-mono text-2xl font-extrabold ${
-                    s.score < 0 ? "text-red-400" : "text-emerald-300"
-                  }`}
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
+        {/* Cards */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:col-span-8">
+          {loading ? (
+            <p className="col-span-full py-10 text-center text-sm text-faint">
+              กำลังโหลด…
+            </p>
+          ) : visible.length === 0 ? (
+            <p className="col-span-full py-10 text-center text-sm text-faint">
+              ไม่เจอชื่อที่ค้นหา
+            </p>
+          ) : (
+            visible.map((s) => {
+              const badge = badgeOf(s.score);
+              return (
+                <div
+                  key={s.name}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-xl bg-low p-4 shadow-sm transition-all duration-200 hover:bg-panel"
                 >
-                  {s.score}
+                  {s.score < 0 && (
+                    <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-softred/5 blur-2xl" />
+                  )}
+                  <div className="mb-4 flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-highest">
+                        <span className="font-display text-lg font-bold">
+                          {AVATAR[s.name] ?? s.name.charAt(0)}
+                        </span>
+                        {s.score < 0 && (
+                          <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-softred">
+                            <span className="material-symbols-outlined text-[10px] text-lowest">
+                              priority_high
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex min-w-0 flex-col">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate font-display font-bold">
+                            {s.name}
+                          </span>
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase ${badge.cls}`}
+                          >
+                            {badge.text}
+                          </span>
+                        </div>
+                        <span className="text-xs text-sub">
+                          {SUBTITLE[s.name] ?? ""}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end">
+                      <span
+                        className={`font-display text-4xl font-bold leading-none tracking-tighter ${scoreColor(s.score)}`}
+                      >
+                        {s.score}
+                      </span>
+                      <span className="text-[11px] uppercase text-faint">
+                        คะแนนสะสม
+                      </span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      disabled={busy}
+                      onClick={() => vote(s.name, -1)}
+                      className="flex items-center justify-center gap-1 rounded-lg bg-softred/10 px-2 py-2.5 font-semibold text-softred shadow-sm transition-all hover:bg-softred hover:text-black active:scale-95 disabled:opacity-40"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        thumb_down
+                      </span>
+                      -1 เกรียน
+                    </button>
+                    <button
+                      disabled={busy}
+                      onClick={() => vote(s.name, 1)}
+                      className="flex items-center justify-center gap-1 rounded-lg bg-highest px-2 py-2.5 font-semibold text-ink shadow-sm transition-all hover:bg-mint hover:text-black active:scale-95 disabled:opacity-40"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        thumb_up
+                      </span>
+                      +1 ทำดี
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Aside */}
+        <div className="flex flex-col gap-5 xl:col-span-4">
+          <div className="flex flex-col rounded-xl bg-low p-4 shadow-md">
+            <div className="mb-3 flex items-center justify-between pb-2">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 animate-ping rounded-full bg-mint" />
+                <span className="font-display font-bold">ฟีดการโหวตสด</span>
+              </div>
+              <span className="text-[11px] uppercase text-faint">
+                Real-Time Sync
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {feed.length === 0 ? (
+                <p className="py-4 text-center text-xs text-faint">
+                  {loading ? "กำลังโหลด…" : "ยังไม่มีโหวต — กดเป็นคนแรกเลย"}
+                </p>
+              ) : (
+                feed.slice(0, 7).map((f, i) => {
+                  const pos = f.delta > 0;
+                  return (
+                    <div
+                      key={`${f.t}-${i}`}
+                      className="flex items-center justify-between rounded-lg bg-lowest p-2"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={`material-symbols-outlined text-[16px] ${pos ? "text-mint" : "text-softred"}`}
+                        >
+                          {pos ? "verified" : "warning"}
+                        </span>
+                        <span className="truncate text-sm font-medium">
+                          {f.name}
+                        </span>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase ${pos ? "bg-mint/10 text-mint" : "bg-softred/10 text-softred"}`}
+                        >
+                          {pos ? "+1 ทำดี" : "-1 เกรียน"}
+                        </span>
+                        <span className="text-[11px] text-faint">
+                          {relativeTime(f.t)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4 rounded-xl bg-low p-4 shadow-md">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="font-display font-bold">
+                  สถิติความเกรียน vs ทำดี
+                </span>
+                <span className="text-[11px] text-faint">
+                  จากฟีดล่าสุด {sum} โหวต
                 </span>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button
-                  disabled={busy !== null}
-                  onClick={() => vote(s.name, -1)}
-                  className="rounded-xl bg-red-500/90 px-4 py-2.5 font-bold hover:bg-red-500 disabled:opacity-40"
-                >
-                  −1 เกรียน
-                </button>
-                <button
-                  disabled={busy !== null}
-                  onClick={() => vote(s.name, 1)}
-                  className="rounded-xl bg-emerald-500 px-4 py-2.5 font-bold text-black hover:bg-emerald-400 disabled:opacity-40"
-                >
-                  +1 ทำดี
-                </button>
-              </div>
+              <span className="material-symbols-outlined text-faint">
+                insights
+              </span>
             </div>
-          ))}
+            <div className="flex flex-col gap-2 rounded-lg bg-lowest p-4">
+              <div className="flex items-center justify-between text-xs font-bold uppercase">
+                <span className="text-mint">ทำดี {plusPct}%</span>
+                <span className="text-softred">เกรียน {100 - plusPct}%</span>
+              </div>
+              <div className="flex h-2 w-full overflow-hidden rounded bg-high">
+                <div className="h-full bg-mint" style={{ width: `${plusPct}%` }} />
+                <div
+                  className="h-full bg-softred"
+                  style={{ width: `${100 - plusPct}%` }}
+                />
+              </div>
+              <svg className="h-12 w-full text-ink" fill="none" viewBox="0 0 200 40">
+                <path
+                  d="M0 35 L20 28 L40 32 L60 18 L80 25 L100 8 L120 15 L140 5 L160 22 L180 12 L200 28"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+                <path
+                  d="M0 35 L20 28 L40 32 L60 18 L80 25 L100 8 L120 15 L140 5 L160 22 L180 12 L200 28 L200 40 L0 40 Z"
+                  fill="currentColor"
+                  fillOpacity="0.05"
+                />
+              </svg>
+            </div>
+            <div className="flex flex-col gap-2 rounded-lg bg-high/40 p-3 text-sm text-sub">
+              <div className="flex items-center gap-2 font-bold text-ink">
+                <span className="material-symbols-outlined text-[16px]">
+                  gavel
+                </span>
+                <span className="text-xs uppercase">
+                  กฎการลงทัณฑ์ประจำสัปดาห์
+                </span>
+              </div>
+              <p className="leading-relaxed">
+                ผู้ที่ได้แต้มต่ำกว่า{" "}
+                <span className="font-bold text-softred">-10</span>{" "}
+                ในวันอาทิตย์ จะต้องเลี้ยงชานมไข่มุก หรือเป็นคนเปิดตี้เกมรอบดึกตามมติสภา
+                Boys Wonder!
+              </p>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+
+      <footer className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-white/10 py-4 text-xs text-sub md:flex-row">
+        <div>BOYS WONDER REPUTATION PROTOCOL • CONDUCT MATRIX ENGINE</div>
+        <div className="flex items-center gap-3">
+          <span>STATUS: SYNCHRONIZED</span>
+          <span className="text-faint">|</span>
+          <span>LATENCY: {latency === null ? "–" : `${latency}MS`}</span>
+        </div>
+      </footer>
     </main>
   );
 }

@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({
       scores: MEMBERS.map((name) => ({ name, score: 0 })),
       demo: true,
-      message: "ยังไม่ได้ตั้งค่า Google Sheet — กำลังแสดงโหมด demo",
+      message: "ยังไม่ได้ตั้งค่า Supabase — กำลังแสดงโหมด demo",
     });
   }
 
@@ -22,7 +22,7 @@ export async function GET() {
     console.error(e);
     const details = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: "อ่านคะแนนจาก Google Sheet ไม่ได้", details },
+      { error: "อ่านคะแนนไม่ได้", details },
       { status: 500 }
     );
   }

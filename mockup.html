@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#e4e1e5", "inverse-surface": "#e5e2e1", "on-primary-fixed-variant": "#454747", "surface-container-lowest": "#0e0e0e", "on-primary-container": "#636565", "secondary-fixed-dim": "#c8c6c9", "surface-container-low": "#1c1b1b", "on-tertiary-fixed-variant": "#005236", "surface-container": "#201f1f", "primary": "#ffffff", "surface-tint": "#c6c6c7", "surface-variant": "#353534", "primary-fixed": "#e2e2e2", "on-secondary-fixed": "#1b1b1e", "on-secondary-fixed-variant": "#47464a", "secondary": "#c8c6c9", "on-surface": "#e5e2e1", "surface-container-high": "#2a2a2a", "inverse-on-surface": "#313030", "on-primary": "#2f3131", "outline": "#8e9192", "surface-container-highest": "#353534", "primary-container": "#e2e2e2", "on-secondary-container": "#b6b4b8", "on-tertiary": "#003824", "on-primary-fixed": "#1a1c1c", "surface-dim": "#131313", "on-error": "#690005", "surface-bright": "#3a3939", "tertiary-fixed-dim": "#4edea3", "on-secondary": "#303033", "surface": "#131313", "on-tertiary-fixed": "#002113", "tertiary-container": "#6ffbbe", "error": "#ffb4ab", "on-error-container": "#ffdad6", "inverse-primary": "#5d5f5f", "tertiary-fixed": "#6ffbbe", "on-tertiary-container": "#00734e", "background": "#131313", "secondary-container": "#47464a", "outline-variant": "#444748", "on-surface-variant": "#c4c7c8", "on-background": "#e5e2e1", "primary-fixed-dim": "#c6c6c7", "tertiary": "#ffffff", "error-container": "#93000a" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xs": "0.25rem", "margin-tablet": "2rem", "margin-desktop": "3rem", "gutter-desktop": "1.5rem", "space-lg": "1.5rem", "space-sm": "0.5rem", "space-xl": "2.5rem", "gutter": "1.25rem", "margin": "1rem", "space-md": "1rem" }, "fontFamily": { "label-sm": ["JetBrains Mono"], "headline-sm": ["Space Grotesk"], "headline-lg": ["Space Grotesk"], "label-md": ["JetBrains Mono"], "label-lg": ["JetBrains Mono"], "headline-lg-mobile": ["Space Grotesk"], "display-mobile": ["Space Grotesk"], "display": ["Space Grotesk"], "body-lg": ["Plus Jakarta Sans"], "headline-md": ["Space Grotesk"], "body-md": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"] }, "fontSize": { "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.08em", "fontWeight": "600" }], "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }], "headline-lg": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-md": ["11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "500" }], "label-lg": ["13px", { "lineHeight": "18px", "letterSpacing": "0.04em", "fontWeight": "500" }], "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "display-mobile": ["36px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "display": ["48px", { "lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }], "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest/90 backdrop-blur-xl border-b border-outline-variant"><div class="h-16 max-w-[1440px] mx-auto px-margin-desktop flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-xs text-primary"><span class="material-symbols-outlined text-headline-sm">stars</span><span class="font-headline-sm text-headline-sm tracking-tight text-primary uppercase">BOYS WONDER</span><span class="hidden md:inline-block font-label-sm text-label-sm text-on-surface-variant px-space-xs py-0.5 rounded bg-surface-container-high border border-outline-variant">คะแนนความประพฤติ</span></div><div class="h-5 w-px bg-outline-variant hidden sm:block"></div><nav class="flex items-center gap-space-xs p-1 rounded-lg bg-surface-container-low border border-outline-variant" data-active-classes="bg-surface-container-highest text-primary rounded-lg border border-outline"><a aria-current="page" class="font-label-md uppercase px-space-md py-1.5 transition-colors bg-surface-container-highest text-primary rounded-lg border border-outline" data-path="conduct-voting" href="#">หน้าโหวต (Vote)</a><a class="font-label-md text-label-md uppercase px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" data-path="conduct-leaderboard" href="#">อันดับคะแนน (Leaderboard)</a><a class="font-label-md text-label-md uppercase px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" data-path="audit-history" href="#">ประวัติคะแนน (Log)</a></nav></div><div class="flex items-center gap-space-md"><div class="hidden xl:flex items-center gap-space-xs px-space-md py-1 rounded bg-surface-container-low border border-outline-variant font-label-sm text-label-sm text-on-surface-variant"><span class="text-tertiary-fixed-dim font-bold">+1</span><span>ทำดี</span><span class="text-outline">/</span><span class="text-error font-bold">-1</span><span>เกรียน</span><span class="w-1 h-1 rounded-full bg-outline"></span><span class="text-on-surface-variant">ติดลบได้</span></div><div class="flex items-center gap-space-xs px-space-sm py-1 rounded bg-surface-container-low border border-outline-variant"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary-fixed-dim opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary-fixed-dim"></span></span><span class="hidden lg:inline-block font-label-sm text-label-sm uppercase text-on-surface-variant">อัปเดตอัตโนมัติ Real-time</span></div><div class="h-5 w-px bg-outline-variant"></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-[calc(100vh-64px)]"><div class="max-w-[1440px] mx-auto px-margin-desktop py-space-lg"><div class="flex flex-col w-full">
+<!-- Interactive & Live Feed Script -->
+<script>
+    function adjustScore(id, delta, memberName) {
+      const scoreEl = document.getElementById('score-' + id);
+      const badgeEl = document.getElementById('badge-' + id);
+      if (!scoreEl) return;
+
+      let current = parseInt(scoreEl.getAttribute('data-value') || '0', 10);
+      current += delta;
+      scoreEl.setAttribute('data-value', current);
+      scoreEl.textContent = (current > 0 ? '+' : '') + current;
+
+      // Update color styles dynamically based on polarity
+      scoreEl.classList.remove('text-error', 'text-tertiary-fixed-dim', 'text-primary');
+      if (badgeEl) {
+        badgeEl.classList.remove('bg-error/10', 'text-error', 'bg-tertiary-fixed-dim/10', 'text-tertiary-fixed-dim', 'bg-surface-container-high', 'text-on-surface-variant');
+      }
+
+      if (current < 0) {
+        scoreEl.classList.add('text-error');
+        if (badgeEl) {
+          badgeEl.classList.add('bg-error/10', 'text-error');
+          badgeEl.textContent = 'ติดลบ (' + current + ')';
+        }
+      } else if (current > 0) {
+        scoreEl.classList.add('text-tertiary-fixed-dim');
+        if (badgeEl) {
+          badgeEl.classList.add('bg-tertiary-fixed-dim/10', 'text-tertiary-fixed-dim');
+          badgeEl.textContent = 'ทำดี (' + current + ')';
+        }
+      } else {
+        scoreEl.classList.add('text-primary');
+        if (badgeEl) {
+          badgeEl.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+          badgeEl.textContent = 'สถานะปกติ';
+        }
+      }
+
+      // Prepend to Real-time Stream
+      const feedContainer = document.getElementById('live-feed-stream');
+      if (feedContainer) {
+        const item = document.createElement('div');
+        item.className = 'p-space-sm bg-surface-container-lowest rounded-lg flex items-center justify-between transition-all transform animate-pulse';
+        const isPositive = delta > 0;
+        const deltaLabel = isPositive ? '+1 ทำดี' : '-1 เกรียน';
+        const deltaClass = isPositive ? 'text-tertiary-fixed-dim bg-tertiary-fixed-dim/10' : 'text-error bg-error/10';
+        const iconName = isPositive ? 'verified' : 'warning';
+
+        item.innerHTML = `
+          <div class="flex items-center gap-space-xs min-w-0">
+            <span class="material-symbols-outlined text-[16px] ${isPositive ? 'text-tertiary-fixed-dim' : 'text-error'}">${iconName}</span>
+            <span class="font-body-sm text-body-sm text-on-surface truncate font-medium">${memberName}</span>
+          </div>
+          <div class="flex items-center gap-space-xs">
+            <span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded ${deltaClass}">${deltaLabel}</span>
+            <span class="font-label-sm text-label-sm text-outline">เมื่อสักครู่</span>
+          </div>
+        `;
+        feedContainer.insertBefore(item, feedContainer.firstChild);
+        if (feedContainer.children.length > 7) {
+          feedContainer.removeChild(feedContainer.lastChild);
+        }
+      }
+    }
+
+    function filterMembers() {
+      const q = (document.getElementById('member-search')?.value || '').toLowerCase().trim();
+      const cards = document.querySelectorAll('[data-member-card]');
+      cards.forEach(card => {
+        const name = card.getAttribute('data-member-name')?.toLowerCase() || '';
+        if (name.includes(q)) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+<!-- Hero Status & Telemetry Header Bar -->
+<section class="mb-space-xl">
+<div class="p-space-lg bg-surface-container-lowest rounded-xl shadow-md relative overflow-hidden flex flex-col lg:flex-row lg:items-center justify-between gap-space-lg">
+<div class="absolute -right-16 -top-16 w-64 h-64 bg-surface-container-high/40 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Title / Rules Description -->
+<div class="flex flex-col gap-space-xs relative z-10">
+<div class="flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">how_to_vote</span>
+</div>
+<span class="font-label-md text-label-md uppercase text-on-surface-variant tracking-wider">BOYS WONDER • CONDUCT PROTOCOL</span>
+<span class="px-space-xs py-0.5 rounded bg-tertiary-fixed-dim/10 text-tertiary-fixed-dim font-label-sm text-label-sm font-semibold">LIVE ACTIVE</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">โหวตความประพฤติ</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+          ใครก็กดได้ กดได้เรื่อยๆ ไม่จำกัด • 
+          <span class="text-tertiary-fixed-dim font-semibold">+1 ถ้าทำดี</span> / 
+          <span class="text-error font-semibold">-1 ถ้าเกรียน</span> • 
+          <span class="text-on-surface underline decoration-outline-variant underline-offset-4">ติดลบได้ไร้ขีดจำกัด</span>
+</p>
+</div>
+<!-- Quick Session Telemetry -->
+<div class="flex items-center gap-space-md shrink-0 relative z-10">
+<div class="px-space-md py-space-sm bg-surface-container rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase">ยอดโหวตรวมวันนี้</span>
+<span class="font-headline-md text-headline-md text-primary tracking-tight font-bold">1,482 <span class="font-label-sm text-label-sm text-tertiary-fixed-dim">+8.4%</span></span>
+</div>
+<div class="px-space-md py-space-sm bg-surface-container rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase">เกรียนสูงสุด (-2)</span>
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-md text-headline-md text-error tracking-tight font-bold">พี่แม็ก</span>
+<span class="material-symbols-outlined text-error text-[18px]">local_fire_department</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Filter & Controls Toolbar -->
+<section class="mb-space-lg flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-md">
+<!-- Search Bar -->
+<div class="relative flex-1 max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg placeholder-outline focus:outline-none focus:bg-surface-container transition-all" id="member-search" oninput="filterMembers()" placeholder="ค้นหาเพื่อนในแก๊ง Boys Wonder..." type="text"/>
+</div>
+<!-- Sorter & Filter Chips -->
+<div class="flex items-center gap-space-xs overflow-x-auto pb-1 sm:pb-0">
+<span class="font-label-sm text-label-sm uppercase text-outline shrink-0 mr-space-xs">เรียงตาม:</span>
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container-high text-primary font-label-md text-label-md uppercase tracking-wider shrink-0 transition-colors hover:bg-surface-bright">ทั้งหมด (8)</button>
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-label-md text-label-md uppercase tracking-wider shrink-0 transition-colors">คะแนนติดลบ</button>
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-label-md text-label-md uppercase tracking-wider shrink-0 transition-colors">แต้มบวกมากสุด</button>
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface font-label-md text-label-md uppercase tracking-wider shrink-0 transition-colors">โหวตบ่อย</button>
+</div>
+</section>
+<!-- Main Asymmetric Dashboard Grid: 8 cols Conduct Cards, 4 cols Audit Feed & Stats -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- Conduct Cards Grid (Desktop 8-col split or responsive 2x3 cards) -->
+<div class="xl:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- CARD 1: พี่แม็ก (Current Score: -2) -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between hover:bg-surface-container transition-all duration-200 shadow-sm relative group overflow-hidden" data-member-card="" data-member-name="พี่แม็ก">
+<div class="absolute -right-8 -top-8 w-24 h-24 bg-error/5 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center relative shrink-0">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">ม</span>
+<span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-error rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-surface-container-lowest">priority_high</span>
+</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary truncate font-bold">พี่แม็ก</span>
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-error/10 text-error" id="badge-1">ติดลบ (-2)</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">จอมหัวร้อนประจำตึก • โหวตล่าสุด 40 วิที่แล้ว</span>
+</div>
+</div>
+<!-- Numeric Score -->
+<div class="flex flex-col items-end">
+<span class="font-display text-display text-error leading-none font-bold tracking-tighter" data-value="-2" id="score-1">-2</span>
+<span class="font-label-sm text-label-sm text-outline uppercase">คะแนนสะสม</span>
+</div>
+</div>
+<!-- Tactile Vote Controls -->
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="py-2.5 px-space-sm rounded-lg bg-error/10 hover:bg-error hover:text-on-error text-error font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm group/btn" onclick="adjustScore(1, -1, 'พี่แม็ก')">
+<span class="material-symbols-outlined text-[20px] group-hover/btn:rotate-12 transition-transform">thumb_down</span>
+<span class="font-headline-sm text-headline-sm font-semibold">-1 เกรียน</span>
+</button>
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-tertiary-fixed-dim hover:text-surface-container-lowest text-on-surface font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm group/btn" onclick="adjustScore(1, 1, 'พี่แม็ก')">
+<span class="material-symbols-outlined text-[20px] group-hover/btn:scale-110 transition-transform">thumb_up</span>
+<span class="font-headline-sm text-headline-sm font-semibold">+1 ทำดี</span>
+</button>
+</div>
+</div>
+<!-- CARD 2: น้องซี (Current Score: 0) -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between hover:bg-surface-container transition-all duration-200 shadow-sm relative group overflow-hidden" data-member-card="" data-member-name="น้องซี">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center relative shrink-0">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">ซ</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary truncate font-bold">น้องซี</span>
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant" id="badge-2">สถานะปกติ</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">สายซัพพอร์ต • โหวตล่าสุด 3 นาทีที่แล้ว</span>
+</div>
+</div>
+<!-- Numeric Score -->
+<div class="flex flex-col items-end">
+<span class="font-display text-display text-primary leading-none font-bold tracking-tighter" data-value="0" id="score-2">0</span>
+<span class="font-label-sm text-label-sm text-outline uppercase">คะแนนสะสม</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-error hover:text-on-error text-error font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(2, -1, 'น้องซี')">
+<span class="material-symbols-outlined text-[20px]">thumb_down</span>
+<span class="font-headline-sm text-headline-sm font-semibold">-1 เกรียน</span>
+</button>
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-tertiary-fixed-dim hover:text-surface-container-lowest text-on-surface font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(2, 1, 'น้องซี')">
+<span class="material-symbols-outlined text-[20px]">thumb_up</span>
+<span class="font-headline-sm text-headline-sm font-semibold">+1 ทำดี</span>
+</button>
+</div>
+</div>
+<!-- CARD 3: น้องไอซ์ (Current Score: 0) -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between hover:bg-surface-container transition-all duration-200 shadow-sm relative group overflow-hidden" data-member-card="" data-member-name="น้องไอซ์">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center relative shrink-0">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">อ</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary truncate font-bold">น้องไอซ์</span>
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant" id="badge-3">สถานะปกติ</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">แนวหน้าสายสับ • โหวตล่าสุด 8 นาทีที่แล้ว</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-display text-display text-primary leading-none font-bold tracking-tighter" data-value="0" id="score-3">0</span>
+<span class="font-label-sm text-label-sm text-outline uppercase">คะแนนสะสม</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-error hover:text-on-error text-error font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(3, -1, 'น้องไอซ์')">
+<span class="material-symbols-outlined text-[20px]">thumb_down</span>
+<span class="font-headline-sm text-headline-sm font-semibold">-1 เกรียน</span>
+</button>
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-tertiary-fixed-dim hover:text-surface-container-lowest text-on-surface font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(3, 1, 'น้องไอซ์')">
+<span class="material-symbols-outlined text-[20px]">thumb_up</span>
+<span class="font-headline-sm text-headline-sm font-semibold">+1 ทำดี</span>
+</button>
+</div>
+</div>
+<!-- CARD 4: น้องเข้ม (Current Score: 0) -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between hover:bg-surface-container transition-all duration-200 shadow-sm relative group overflow-hidden" data-member-card="" data-member-name="น้องเข้ม">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center relative shrink-0">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">ข</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary truncate font-bold">น้องเข้ม</span>
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant" id="badge-4">สถานะปกติ</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">เงียบแต่เฉียบคม • โหวตล่าสุด 12 นาทีที่แล้ว</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-display text-display text-primary leading-none font-bold tracking-tighter" data-value="0" id="score-4">0</span>
+<span class="font-label-sm text-label-sm text-outline uppercase">คะแนนสะสม</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-error hover:text-on-error text-error font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(4, -1, 'น้องเข้ม')">
+<span class="material-symbols-outlined text-[20px]">thumb_down</span>
+<span class="font-headline-sm text-headline-sm font-semibold">-1 เกรียน</span>
+</button>
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-tertiary-fixed-dim hover:text-surface-container-lowest text-on-surface font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(4, 1, 'น้องเข้ม')">
+<span class="material-symbols-outlined text-[20px]">thumb_up</span>
+<span class="font-headline-sm text-headline-sm font-semibold">+1 ทำดี</span>
+</button>
+</div>
+</div>
+<!-- CARD 5: จารมอส (Current Score: 0) -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between hover:bg-surface-container transition-all duration-200 shadow-sm relative group overflow-hidden" data-member-card="" data-member-name="จารมอส">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center relative shrink-0">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">จ</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary truncate font-bold">จารมอส</span>
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant" id="badge-5">สถานะปกติ</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">ปรมาจารย์แผนที่ • โหวตล่าสุด 15 นาทีที่แล้ว</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-display text-display text-primary leading-none font-bold tracking-tighter" data-value="0" id="score-5">0</span>
+<span class="font-label-sm text-label-sm text-outline uppercase">คะแนนสะสม</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-error hover:text-on-error text-error font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(5, -1, 'จารมอส')">
+<span class="material-symbols-outlined text-[20px]">thumb_down</span>
+<span class="font-headline-sm text-headline-sm font-semibold">-1 เกรียน</span>
+</button>
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-tertiary-fixed-dim hover:text-surface-container-lowest text-on-surface font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(5, 1, 'จารมอส')">
+<span class="material-symbols-outlined text-[20px]">thumb_up</span>
+<span class="font-headline-sm text-headline-sm font-semibold">+1 ทำดี</span>
+</button>
+</div>
+</div>
+<!-- CARD 6: ปอแซค (Current Score: 0) -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between hover:bg-surface-container transition-all duration-200 shadow-sm relative group overflow-hidden" data-member-card="" data-member-name="ปอแซค">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center relative shrink-0">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">ป</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary truncate font-bold">ปอแซค</span>
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant" id="badge-6">สถานะปกติ</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">ตัวฮาประจำวอยซ์ • โหวตล่าสุด 18 นาทีที่แล้ว</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-display text-display text-primary leading-none font-bold tracking-tighter" data-value="0" id="score-6">0</span>
+<span class="font-label-sm text-label-sm text-outline uppercase">คะแนนสะสม</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-error hover:text-on-error text-error font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(6, -1, 'ปอแซค')">
+<span class="material-symbols-outlined text-[20px]">thumb_down</span>
+<span class="font-headline-sm text-headline-sm font-semibold">-1 เกรียน</span>
+</button>
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-tertiary-fixed-dim hover:text-surface-container-lowest text-on-surface font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(6, 1, 'ปอแซค')">
+<span class="material-symbols-outlined text-[20px]">thumb_up</span>
+<span class="font-headline-sm text-headline-sm font-semibold">+1 ทำดี</span>
+</button>
+</div>
+</div>
+<!-- CARD 7: พี่บาม (Current Score: 0) -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between hover:bg-surface-container transition-all duration-200 shadow-sm relative group overflow-hidden" data-member-card="" data-member-name="พี่บาม">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center relative shrink-0">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">บ</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary truncate font-bold">พี่บาม</span>
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant" id="badge-7">สถานะปกติ</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">โปรเพลเยอร์ประจำทีม • โหวตล่าสุด 21 นาทีที่แล้ว</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-display text-display text-primary leading-none font-bold tracking-tighter" data-value="0" id="score-7">0</span>
+<span class="font-label-sm text-label-sm text-outline uppercase">คะแนนสะสม</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-error hover:text-on-error text-error font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(7, -1, 'พี่บาม')">
+<span class="material-symbols-outlined text-[20px]">thumb_down</span>
+<span class="font-headline-sm text-headline-sm font-semibold">-1 เกรียน</span>
+</button>
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-tertiary-fixed-dim hover:text-surface-container-lowest text-on-surface font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(7, 1, 'พี่บาม')">
+<span class="material-symbols-outlined text-[20px]">thumb_up</span>
+<span class="font-headline-sm text-headline-sm font-semibold">+1 ทำดี</span>
+</button>
+</div>
+</div>
+<!-- CARD 8: เพื่อนร่วมแก๊งคนใหม่ (New Cadet) -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col justify-between hover:bg-surface-container transition-all duration-200 shadow-sm relative group overflow-hidden" data-member-card="" data-member-name="สมาชิกใหม่">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center relative shrink-0">
+<span class="font-headline-sm text-headline-sm text-on-surface-variant font-bold">+</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary truncate font-bold">สมาชิกใหม่ / เพื่อนร่วมแก๊ง</span>
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant" id="badge-8">เด็กฝึก</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">รอยืนยันตัวตน • เพิ่งเข้าร่วม</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-display text-display text-primary leading-none font-bold tracking-tighter" data-value="0" id="score-8">0</span>
+<span class="font-label-sm text-label-sm text-outline uppercase">คะแนนสะสม</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-error hover:text-on-error text-error font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(8, -1, 'สมาชิกใหม่')">
+<span class="material-symbols-outlined text-[20px]">thumb_down</span>
+<span class="font-headline-sm text-headline-sm font-semibold">-1 เกรียน</span>
+</button>
+<button class="py-2.5 px-space-sm rounded-lg bg-surface-container-highest hover:bg-tertiary-fixed-dim hover:text-surface-container-lowest text-on-surface font-headline-sm text-headline-sm flex items-center justify-center gap-space-xs transition-all active:scale-95 shadow-sm" onclick="adjustScore(8, 1, 'สมาชิกใหม่')">
+<span class="material-symbols-outlined text-[20px]">thumb_up</span>
+<span class="font-headline-sm text-headline-sm font-semibold">+1 ทำดี</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Auxiliary Column: Real-time Audit Stream & Syndicate Insights (xl:col-span-4) -->
+<div class="xl:col-span-4 flex flex-col gap-space-lg">
+<!-- Live Audit Ticker Card -->
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-md flex flex-col">
+<div class="flex items-center justify-between pb-space-sm mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-ping"></span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">ฟีดการโหวตสด</span>
+</div>
+<span class="font-label-sm text-label-sm uppercase text-outline">Real-Time Sync</span>
+</div>
+<!-- Live Feed Activity Stream -->
+<div class="flex flex-col gap-space-xs" id="live-feed-stream">
+<!-- Item 1 -->
+<div class="p-space-sm bg-surface-container-lowest rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-[16px] text-error">warning</span>
+<span class="font-body-sm text-body-sm text-on-surface truncate font-medium">พี่แม็ก</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-error/10 text-error">-1 เกรียน</span>
+<span class="font-label-sm text-label-sm text-outline">40 วิที่แล้ว</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-space-sm bg-surface-container-lowest rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-[16px] text-error">warning</span>
+<span class="font-body-sm text-body-sm text-on-surface truncate font-medium">พี่แม็ก</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-error/10 text-error">-1 เกรียน</span>
+<span class="font-label-sm text-label-sm text-outline">2 นาทีที่แล้ว</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="p-space-sm bg-surface-container-lowest rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-[16px] text-tertiary-fixed-dim">verified</span>
+<span class="font-body-sm text-body-sm text-on-surface truncate font-medium">น้องซี</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-tertiary-fixed-dim/10 text-tertiary-fixed-dim">+1 ทำดี</span>
+<span class="font-label-sm text-label-sm text-outline">4 นาทีที่แล้ว</span>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="p-space-sm bg-surface-container-lowest rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-[16px] text-tertiary-fixed-dim">verified</span>
+<span class="font-body-sm text-body-sm text-on-surface truncate font-medium">พี่บาม</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-tertiary-fixed-dim/10 text-tertiary-fixed-dim">+1 ทำดี</span>
+<span class="font-label-sm text-label-sm text-outline">6 นาทีที่แล้ว</span>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="p-space-sm bg-surface-container-lowest rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-[16px] text-error">warning</span>
+<span class="font-body-sm text-body-sm text-on-surface truncate font-medium">ปอแซค</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.5 rounded bg-error/10 text-error">-1 เกรียน</span>
+<span class="font-label-sm text-label-sm text-outline">11 นาทีที่แล้ว</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Conduct Matrix Analytics Card with Visual Sparkline & Summary -->
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-md flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">สถิติความเกรียน vs ทำดี</span>
+<span class="font-label-sm text-label-sm text-outline">ประมวลผลอัตโนมัติ 24 ชม.</span>
+</div>
+<span class="material-symbols-outlined text-outline">insights</span>
+</div>
+<!-- Inline SVG Visualization (Ratio Gauge & Sparkline) -->
+<div class="p-space-md bg-surface-container-lowest rounded-lg flex flex-col gap-space-sm">
+<div class="flex justify-between items-center font-label-sm text-label-sm uppercase">
+<span class="text-tertiary-fixed-dim font-bold">ทำดี 48%</span>
+<span class="text-error font-bold">เกรียน 52%</span>
+</div>
+<!-- Split Ratio Bar -->
+<div class="w-full h-2 rounded bg-surface-container-high flex overflow-hidden">
+<div class="h-full bg-tertiary-fixed-dim" style="width: 48%;"></div>
+<div class="h-full bg-error" style="width: 52%;"></div>
+</div>
+<!-- Sparkline Wave Graph (Sub 2KB, Theme Color) -->
+<div class="mt-space-sm pt-space-xs flex flex-col gap-1">
+<div class="flex items-center justify-between text-outline font-label-sm text-label-sm">
+<span>ความถี่การกดโหวต (ชม.)</span>
+<span class="text-primary font-bold">Peak: 18:00</span>
+</div>
+<svg class="w-full h-12 text-primary" fill="none" viewbox="0 0 200 40">
+<path d="M0 35 L20 28 L40 32 L60 18 L80 25 L100 8 L120 15 L140 5 L160 22 L180 12 L200 28" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M0 35 L20 28 L40 32 L60 18 L80 25 L100 8 L120 15 L140 5 L160 22 L180 12 L200 28 L200 40 L0 40 Z" fill="currentColor" fill-opacity="0.05"></path>
+</svg>
+</div>
+</div>
+<!-- Gang Honor Code Rules -->
+<div class="flex flex-col gap-space-xs text-on-surface-variant font-body-sm text-body-sm bg-surface-container-high/40 p-space-sm rounded-lg">
+<div class="flex items-center gap-space-xs text-primary font-bold">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span class="font-label-sm text-label-sm uppercase">กฎการลงทัณฑ์ประจำสัปดาห์</span>
+</div>
+<p class="leading-relaxed">
+            ผู้ที่ได้แต้มต่ำกว่า <span class="text-error font-bold">-10</span> ในวันอาทิตย์ จะต้องเลี้ยงชานมไข่มุก หรือเป็นคนเปิดตี้เกมรอบดึกตามมติสภา Boys Wonder!
+          </p>
+</div>
+</div>
+<!-- Quick Add Member Action Card -->
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-md flex items-center justify-between hover:bg-surface-container transition-colors cursor-pointer group">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest group-hover:bg-primary group-hover:text-on-primary text-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-primary font-bold group-hover:text-primary transition-colors">เพิ่มชื่อเพื่อนร่วมตี้</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">ส่งคำเชิญ หรือเพิ่มเป้าหมายโหวตคนใหม่</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 group-hover:text-primary transition-all">chevron_right</span>
+</div>
+</div>
+</div>
+</div></div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant py-space-md"><div class="max-w-[1440px] mx-auto px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-space-sm font-label-sm text-label-sm text-on-surface-variant"><div>BOYS WONDER REPUTATION PROTOCOL • CONDUCT MATRIX ENGINE</div><div class="flex items-center gap-space-md"><span class="text-on-surface-variant">STATUS: SYNCHRONIZED</span><span class="text-outline">|</span><span class="text-on-surface-variant">LATENCY: 12MS</span></div></div></footer></body></html>
