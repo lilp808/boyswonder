@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { isMember } from "@/lib/members";
 import { isSheetsConfigured, voteAndGetScores } from "@/lib/sheets";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +13,9 @@ export async function POST(req: Request) {
   }
 
   const { name, delta } = body;
-  if (!name || !isMember(name)) {
+  // หมายเหตุ: ไม่เช็ครายชื่อ hardcode ตรงนี้ — ชื่อสมาชิกอยู่ในตาราง members
+  // บน Supabase แล้ว (แก้ผ่านหน้า /edit) ให้ voteAndGetScores ตรวจกับ DB
+  if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "ชื่อไม่ถูกต้อง" }, { status: 400 });
   }
   if (delta !== 1 && delta !== -1) {

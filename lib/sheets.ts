@@ -3,6 +3,7 @@ import {
   DEFAULT_SETTINGS,
   MEMBERS,
   SUBTITLE,
+  isMember,
   type MemberProfile,
   type ScoreEntry,
   type SiteSettings,
@@ -78,16 +79,20 @@ export async function voteAndGetScores(
   const clean = name.trim();
   if (!clean) throw new Error("ชื่อไม่ถูกต้อง");
   // ตรวจสมาชิกใน DB (ถ้ามีตาราง) — ต้อง active ถึงโหวตได้
+  // ถ้าตาราง members ยังไม่มี (DB เก่าที่ยังไม่รัน migration) ให้ fallback เช็คลิสต์เดิม
   try {
     const members = await getMembersRaw();
     if (members.length > 0) {
       const found = members.find((m) => m.name === clean);
       if (!found) throw new Error("ไม่มีชื่อนี้ในสมาชิก");
       if (!found.is_active) throw new Error("สมาชิกคนนี้ถูกปิดใช้งานแล้ว");
+    } else if (!isMember(clean)) {
+      throw new Error("ชื่อไม่ถูกต้อง");
     }
   } catch (e) {
-    if (e instanceof Error && /ไม่มีชื่อนี้|ปิดใช้งาน/.test(e.message)) throw e;
-    // ถ้าตารางยังไม่มี ให้ผ่านไปใช้ vote ตรงๆ
+    if (e instanceof Error && /ไม่มีชื่อนี้|ปิดใช้งาน|ชื่อไม่ถูกต้อง/.test(e.message)) throw e;
+    // อ่านตาราง members ไม่ได้ (เช่นยังไม่รัน migration) — fallback ลิสต์เดิมกันชื่อมั่ว
+    if (!isMember(clean)) throw new Error("ชื่อไม่ถูกต้อง");
   }
   const { error } = await db().rpc("vote_member", {
     p_name: clean,
