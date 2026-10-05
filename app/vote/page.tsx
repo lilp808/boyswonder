@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   BadgeCheck,
   ChartColumn,
   Flame,
   Gavel,
+  Pencil,
   Search,
   ThumbsDown,
   ThumbsUp,
@@ -460,6 +462,14 @@ export default function VotePage() {
           <span>STATUS: SYNCHRONIZED</span>
           <span className="text-faint">|</span>
           <span>LATENCY: {latency === null ? "–" : `${latency}MS`}</span>
+          <span className="text-faint">|</span>
+          <Link
+            href="/edit"
+            className="flex items-center gap-1 text-faint transition-colors hover:text-ink"
+          >
+            <Pencil size={12} />
+            edit
+          </Link>
         </div>
       </footer>
     </main>
